@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConceptVerse — Learn Anything Through Your Favorite Universe</title>
+  <meta name="description" content="ConceptVerse turns any topic into an immersive learning adventure inside your favorite universe." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Decorative background layers -->
+  <div class="bg-void" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--violet" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--cyan" aria-hidden="true"></div>
+  <div class="starfield" id="starfield" aria-hidden="true"></div>
+
+  <!-- Universe-specific background overlay -->
+  <div class="universe-background" id="universeBackground" aria-hidden="true"></div>
+
+  <main class="page">
+
+    <!-- SCREEN 1: IMMERSIVE UNIVERSE SELECTION -->
+    <section class="screen universe-selection-screen" id="universeSelectionScreen">
+      <div class="universe-portal-container">
+        <div class="central-portal" id="centralPortal">
+          <div class="portal-ring portal-ring--outer"></div>
+          <div class="portal-ring portal-ring--middle"></div>
+          <div class="portal-ring portal-ring--inner"></div>
+          <div class="portal-core"></div>
+        </div>
+
+        <div class="universe-header">
+          <p class="eyebrow"><span class="eyebrow__dot"></span>Multiversal Learning Engine</p>
+          <h1 class="title">
+            ConceptVerse
+          </h1>
+          <p class="subtitle">Choose Your Universe. Begin Your Adventure.</p>
+        </div>
+
+        <div class="universe-portals-grid" id="universePortalsGrid">
+          <!-- Universe portals will be dynamically generated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: CHARACTER CREATION (SINGLE COMPACT SCREEN) -->
+    <section class="screen character-creation-screen hidden-screen" id="characterCreationScreen">
+      <div class="character-creation-container">
+        <!-- Header -->
+        <div class="character-creation-header">
+          <button class="back-btn" id="backToUniverseBtn">← Back to Universes</button>
+          <div class="universe-badge" id="creationUniverseBadge">🧙‍♂️ Harry Potter Universe</div>
+          <h2 class="screen-title" id="characterCreationTitle">Create Your Character</h2>
+          <p class="screen-subtitle" id="characterCreationSubtitle">Define your identity, powers, and lore attributes.</p>
+        </div>
+
+        <!-- Saved characters strip (additive — reuses the existing form below) -->
+        <div class="saved-characters-strip hidden-element" id="savedCharactersStrip" aria-label="Your saved characters" role="group"></div>
+
+        <div class="character-creation-body">
+          
+          <!-- Main Form Area (Left) -->
+          <div class="character-form-main glass">
+            
+            <!-- Character Name Input -->
+            <div class="form-group character-name-group">
+              <label class="form-label" for="characterName">Character Name <span class="required-indicator">*</span></label>
+              <input type="text" id="characterName" class="form-input" placeholder="Enter your character's name..." autocomplete="off" />
+            </div>
+
+            <!-- Appearance Options -->
+            <div class="form-group">
+              <label class="form-label">Appearance / Attire</label>
+              <div class="appearance-options" id="appearanceOptions"></div>
+            </div>
+
+            <!-- Power Group -->
+            <div class="form-group">
+              <label class="form-label" id="powerLabel">Power / Ability <span class="required-indicator">*</span></label>
+              <div class="single-select-group" id="powerGroup">
+                <div class="predefined-options" id="powerOptions"></div>
+                <div class="custom-option-container">
+                  <button type="button" class="option-btn custom-option-btn" id="customPowerBtn">✨ Create Your Own</button>
+                  <input type="text" class="form-input custom-input hidden-element" id="customPowerInput" placeholder="Describe your custom power..." />
+                </div>
+              </div>
+            </div>
+
+            <!-- Weapon Group -->
+            <div class="form-group">
+              <label class="form-label" id="weaponLabel">Weapon / Tool <span class="required-indicator">*</span></label>
+              <div class="single-select-group" id="weaponGroup">
+                <div class="predefined-options" id="weaponOptions"></div>
+                <div class="custom-option-container">
+                  <button type="button" class="option-btn custom-option-btn" id="customWeaponBtn">✨ Create Your Own</button>
+                  <input type="text" class="form-input custom-input hidden-element" id="customWeaponInput" placeholder="Describe your custom weapon..." />
+                </div>
+              </div>
+            </div>
+
+            <!-- Role Group -->
+            <div class="form-group">
+              <label class="form-label" id="roleLabel">Role <span class="required-indicator">*</span></label>
+              <div class="single-select-group" id="roleGroup">
+                <div class="predefined-options" id="roleOptions"></div>
+                <div class="custom-option-container">
+                  <button type="button" class="option-btn custom-option-btn" id="customRoleBtn">✨ Create Your Own</button>
+                  <input type="text" class="form-input custom-input hidden-element" id="customRoleInput" placeholder="Describe your custom role..." />
+                </div>
+              </div>
+            </div>
+
+            <!-- Personality Group -->
+            <div class="form-group">
+              <label class="form-label" id="personalityLabel">Personality Traits <span class="required-indicator">*</span></label>
+              <div class="multi-select-group" id="personalityGroup">
+                <div class="predefined-options" id="personalityOptions"></div>
+                <div class="custom-option-container">
+                  <button type="button" class="option-btn custom-option-btn" id="customPersonalityBtn">✨ Add Custom Trait</button>
+                  <input type="text" class="form-input custom-input hidden-element" id="customPersonalityInput" placeholder="Add custom trait..." />
+                </div>
+              </div>
+            </div>
+
+            <!-- Universe-Specific Attributes -->
+            <div class="form-group universe-specific-group" id="universeSpecificGroup">
+              <label class="form-label">Universe Attributes</label>
+              <div class="universe-specific-options" id="universeSpecificOptions"></div>
+            </div>
+
+          </div>
+
+          <!-- Sticky Right Sidebar: Compact Preview & ONE Action Button -->
+          <div class="character-preview-sidebar glass">
+            <div class="preview-header">
+              <div class="preview-avatar" id="previewAvatar">👤</div>
+              <div class="preview-title-group">
+                <span class="preview-label">CHARACTER PREVIEW</span>
+                <h4 class="preview-name" id="previewName">Unnamed Hero</h4>
+              </div>
+            </div>
+
+            <div class="preview-details" id="previewDetails">
+              <!-- Live updating preview items -->
+            </div>
+
+            <div class="preview-action-container">
+              <button type="button" class="primary-btn full-width-btn" id="createCharacterBtn">CREATE CHARACTER &amp; CONTINUE</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: MISSION SELECTION -->
+    <section class="screen mission-selection-screen hidden-screen" id="missionSelectionScreen">
+      <div class="mission-selection-container">
+        <div class="mission-selection-header">
+          <button class="back-btn" id="backToCharacterBtn">← Back to Character</button>
+          <div class="character-info-bar glass" id="characterInfoBar">
+            <div class="character-mini-avatar" id="miniCharacterAvatar">👤</div>
+            <div class="character-mini-info">
+              <p class="mini-character-name" id="miniCharacterName">Hero Name</p>
+              <p class="mini-character-universe" id="miniCharacterUniverse">Universe</p>
+            </div>
+          </div>
+          <h2 class="screen-title">Choose Your Mission & Learn</h2>
+          <p class="screen-subtitle">Select a mission that contains the knowledge you seek.</p>
+        </div>
+
+        <!-- Topic Input Area -->
+        <div id="topicInputArea" class="glass" style="padding: 20px; border-radius: 16px; margin-bottom: 24px; text-align: center;">
+          <label class="form-label" for="missionTopicInput" style="display: block; margin-bottom: 10px; font-size: 1.05em;">
+            🧠 What do you want to learn today?
+          </label>
+          <input type="text" id="missionTopicInput" class="form-input"
+            placeholder="e.g. Photosynthesis, Black Holes, Fractions…"
+            style="width: 100%; max-width: 440px; margin-bottom: 12px; text-align: center;" />
+          <br />
+          <button class="primary-btn" id="startMissionBtn" style="min-width: 200px;">
+            Start Mission →
+          </button>
+          <div id="missionLoadingState" style="display: none; margin-top: 12px; opacity: 0.7;">
+            ⏳ Your adventure is being created by AI… hang tight!
+          </div>
+        </div>
+
+        <div class="mission-cards-grid" id="missionCardsGrid">
+          <!-- Mission cards will be dynamically generated -->
+          <div class="mission-card glass placeholder-mission-card">
+            <div class="mission-card-placeholder">
+              <span class="mission-placeholder-icon">🎯</span>
+              <h4 class="mission-placeholder-title">Mission Title</h4>
+              <p class="mission-placeholder-description">Mission description will appear here</p>
+              <div class="mission-placeholder-badge">Coming Soon</div>
+            </div>
+          </div>
+          
+          <div class="mission-card glass placeholder-mission-card">
+            <div class="mission-card-placeholder">
+              <span class="mission-placeholder-icon">🔮</span>
+              <h4 class="mission-placeholder-title">Another Mission</h4>
+              <p class="mission-placeholder-description">More missions will be generated by AI</p>
+              <div class="mission-placeholder-badge">Coming Soon</div>
+            </div>
+          </div>
+
+          <div class="mission-card glass placeholder-mission-card">
+            <div class="mission-card-placeholder">
+              <span class="mission-placeholder-icon">⚡</span>
+              <h4 class="mission-placeholder-title">Custom Mission</h4>
+              <p class="mission-placeholder-description">Enter your own learning topic</p>
+              <div class="mission-placeholder-badge">Custom</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hub-access-bar glass">
+          <p class="hub-access-text">Or return to <button class="hub-link-btn" id="goToHubBtn">ConceptVerse Hub</button></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: CINEMATIC ADVENTURE -->
+    <section class="screen cinematic-adventure-screen hidden-screen" id="cinematicAdventureScreen">
+      <div class="cinematic-adventure-container">
+        <div class="adventure-header glass">
+          <button class="back-btn" id="backToMissionBtn">← Exit Adventure</button>
+          <div class="adventure-progress" id="adventureProgress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="adventureProgressFill"></div>
+            </div>
+            <span class="progress-text" id="adventureProgressText">Scene 1 of 5</span>
+          </div>
+          <div class="adventure-points-display">
+            <span class="points-icon">⭐</span>
+            <span class="points-value" id="adventurePoints">0</span>
+          </div>
+        </div>
+
+        <div class="adventure-stage" id="adventureStage">
+          <!-- Main stage — the scene lives here and fills the viewport -->
+          <div class="adventure-scene" id="adventureScene" aria-label="Story scene">
+            <div class="scene-background" id="sceneBackground" aria-hidden="true"></div>
+            <div class="scene-location" id="sceneLocationLabel" aria-hidden="true"></div>
+
+            <!-- Cast of characters on stage (lightweight SVG figures) -->
+            <div class="characters-display" id="charactersDisplay" aria-label="Characters on stage"></div>
+
+            <!-- Center-stage effect layer: spells, discoveries, environment changes -->
+            <div class="effect-layer" id="actionMomentsArea" aria-hidden="true"></div>
+
+            <!-- Lower event stream (secondary — the stage carries the story) -->
+            <div class="scene-stream" id="sceneStream">
+              <div class="stream-log" id="streamLog" role="log" aria-live="polite"></div>
+              <button type="button" class="story-skip-btn" id="storySkipBtn" title="Skip to your decision">Skip ▶</button>
+            </div>
+
+            <!-- Learner interaction / choice overlay (hidden until a decision is asked) -->
+            <div class="user-interaction-area glass hidden-element" id="userInteractionArea">
+              <p class="interaction-question" id="interactionQuestionText"></p>
+              <div class="interaction-options" id="interactionOptions"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 5: CHARACTER CHALLENGE -->
+    <section class="screen character-challenge-screen hidden-screen" id="characterChallengeScreen">
+      <div class="character-challenge-container">
+        <div class="challenge-header glass">
+          <div class="challenge-progress-info">
+            <span class="challenge-stage-label">Challenge Phase</span>
+            <span class="challenge-divider">|</span>
+            <span class="challenge-points-info">Points: <span id="challengePoints">0</span></span>
+          </div>
+        </div>
+
+        <div class="challenge-stage" id="challengeStage">
+          <!-- Challenger character presentation -->
+          <div class="challenger-presentation glass" id="challengerPresentation">
+            <div class="challenger-avatar" id="challengerAvatar">🧙‍♂️</div>
+            <div class="challenger-info">
+              <h3 class="challenger-name" id="challengerName">Professor Snape</h3>
+              <p class="challenger-title" id="challengerTitle">Hogwarts Potions Master</p>
+            </div>
+            <div class="challenger-dialogue" id="challengerDialogue">
+              <p>"Let's see what you've learned from your adventure..."</p>
+            </div>
+          </div>
+
+          <!-- Challenge question area -->
+          <div class="challenge-question-area glass" id="challengeQuestionArea">
+            <div class="question-content" id="questionContent">
+              <h4 class="question-text" id="questionText">Challenge question will appear here</h4>
+              <div class="question-options" id="questionOptions">
+                <!-- Dynamic question options -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Feedback area -->
+          <div class="challenge-feedback-area glass hidden-element" id="challengeFeedbackArea">
+            <div class="feedback-content" id="feedbackContent">
+              <div class="feedback-icon" id="feedbackIcon">✅</div>
+              <div class="feedback-text" id="feedbackText">Correct! Well done.</div>
+              <div class="feedback-points" id="feedbackPoints">+10 points</div>
+            </div>
+            <!-- Voice reaction placeholder -->
+            <div class="voice-reaction-placeholder" id="voiceReactionPlaceholder">
+              <span class="voice-icon">🔊</span>
+              <p class="voice-text">Voice reaction will play here</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Challenge progress -->
+        <div class="challenge-progress-bar glass">
+          <div class="challenge-progress-label">Question <span id="currentQuestionNum">1</span> of <span id="totalQuestions">5</span></div>
+          <div class="challenge-progress-track">
+            <div class="challenge-progress-fill" id="challengeProgressFill"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: CONCEPT UNLOCKED -->
+    <section class="screen concept-unlocked-screen hidden-screen" id="conceptUnlockedScreen">
+      <div class="concept-unlocked-container">
+        <div class="concept-reveal-animation" id="conceptRevealAnimation">
+          <div class="reveal-particles" id="revealParticles"></div>
+          <div class="reveal-core" id="revealCore">
+            <span class="reveal-icon">🧠</span>
+          </div>
+        </div>
+
+        <div class="concept-content glass">
+          <div class="concept-header">
+            <p class="concept-eyebrow">✨ CONCEPT UNLOCKED</p>
+            <h2 class="concept-title" id="conceptTitle">Photosynthesis</h2>
+          </div>
+
+          <div class="concept-explanation">
+            <h3 class="explanation-label">Short Explanation</h3>
+            <p class="explanation-text" id="conceptShortExplanation">
+              Plants use sunlight, water, and carbon dioxide to create energy and oxygen.
+            </p>
+          </div>
+
+          <div class="adventure-connection">
+            <h3 class="connection-label">Adventure Connection</h3>
+            <p class="connection-text" id="adventureConnectionText">
+              This concept explains why the enchanted greenhouse plants were thriving in sunlight.
+            </p>
+          </div>
+
+          <div class="concept-actions">
+            <button class="action-btn primary-action" id="nextAdventureBtn">
+              <span class="action-icon">🚀</span>
+              <span class="action-text">Next Adventure</span>
+            </button>
+            <button class="action-btn secondary-action" id="learnInDetailBtn">
+              <span class="action-icon">📚</span>
+              <span class="action-text">Learn in Detail</span>
+            </button>
+            <button class="action-btn secondary-action" id="conceptBackUniverseBtn">
+              <span class="action-icon">🌌</span>
+              <span class="action-text">Back to Universe</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 7: LEARN IN DETAIL -->
+    <section class="screen learn-in-detail-screen hidden-screen" id="learnInDetailScreen">
+      <div class="learn-in-detail-container">
+        <div class="learn-detail-header glass">
+          <button class="back-btn" id="backToConceptBtn">← Back to Concept</button>
+          <h2 class="screen-title">Learn in Detail</h2>
+          <p class="screen-subtitle" id="learnDetailSubtitle">Deep dive into Photosynthesis</p>
+        </div>
+
+        <div class="learn-detail-content">
+          <!-- Detailed explanation -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Detailed Explanation</h3>
+            <div class="detail-content" id="detailedExplanation">
+              <p>Detailed explanation content will appear here...</p>
+            </div>
+          </div>
+
+          <!-- Adventure connections -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Adventure Connections</h3>
+            <div class="detail-content" id="adventureConnections">
+              <p>How this concept appeared in your adventure...</p>
+            </div>
+          </div>
+
+          <!-- Real-world examples -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Real-World Examples</h3>
+            <div class="detail-content" id="realWorldExamples">
+              <p>Real-world applications of this concept...</p>
+            </div>
+          </div>
+
+          <!-- Visual explanations -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Visual Explanations</h3>
+            <div class="visual-content" id="visualExplanations">
+              <div class="diagram-placeholder glass">
+                <span class="diagram-icon">📊</span>
+                <p class="diagram-text">Diagrams and animations will appear here</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Practice questions -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Practice Questions</h3>
+            <div class="practice-content" id="practiceQuestions">
+              <p>Practice questions to test your understanding...</p>
+            </div>
+          </div>
+
+          <!-- Mini quiz -->
+          <div class="detail-section glass">
+            <h3 class="detail-section-title">Mini Quiz</h3>
+            <div class="mini-quiz-content" id="miniQuiz">
+              <p>Quick quiz to reinforce learning...</p>
+            </div>
+          </div>
+
+          <!-- Animated teaching character placeholder -->
+          <div class="teaching-character-placeholder glass" id="teachingCharacterPlaceholder">
+            <div class="teaching-placeholder-content">
+              <span class="teaching-icon">🎓</span>
+              <p class="teaching-text">Personalized Animated Teaching Character</p>
+              <p class="teaching-subtext">Your AI tutor will appear here in future updates</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="learn-detail-actions glass">
+          <button class="action-btn" id="completeLearningBtn">Complete & Return to Hub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 8: CONCEPTVERSE HUB -->
+    <section class="screen hub-screen hidden-screen" id="hubScreen">
+      <div class="hub-container">
+        <div class="hub-header">
+          <h1 class="hub-title">ConceptVerse Hub</h1>
+          <p class="hub-subtitle">Your multiversal learning center</p>
+        </div>
+
+        <div class="hub-content">
+          <!-- Character profile card -->
+          <div class="hub-card glass character-profile-card" id="characterProfileCard">
+            <div class="profile-header">
+              <div class="profile-avatar" id="hubCharacterAvatar">👤</div>
+              <div class="profile-info">
+                <h3 class="profile-name" id="hubCharacterName">Hero Name</h3>
+                <p class="profile-universe" id="hubCharacterUniverse">Universe</p>
+              </div>
+            </div>
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-label">Points</span>
+                <span class="stat-value" id="hubPoints">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Adventures</span>
+                <span class="stat-value" id="hubAdventures">0</span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <button class="profile-action-btn" id="switchCharacterBtn">Switch Character</button>
+              <button class="profile-action-btn" id="createNewCharacterBtn">Create New</button>
+            </div>
+          </div>
+
+          <!-- Points and badges -->
+          <div class="hub-card glass progress-card" id="progressCard">
+            <h3 class="card-title">Your Progress</h3>
+            <div class="points-display">
+              <span class="points-large-icon">⭐</span>
+              <span class="points-large-value" id="hubLargePoints">0</span>
+            </div>
+            <div class="badges-section">
+              <h4 class="badges-title">Badges Earned</h4>
+              <div class="badges-grid" id="badgesGrid">
+                <div class="badge-placeholder">🏆 No badges yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Learned concepts -->
+          <div class="hub-card glass concepts-card" id="conceptsCard">
+            <h3 class="card-title">Learned Concepts</h3>
+            <div class="concepts-list" id="conceptsList">
+              <div class="concept-placeholder">No concepts learned yet</div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="hub-card glass actions-card" id="actionsCard">
+            <h3 class="card-title">Quick Actions</h3>
+            <div class="action-buttons">
+              <button class="hub-action-btn" id="hubNewMissionBtn">🎯 New Mission</button>
+              <button class="hub-action-btn" id="hubSwitchUniverseBtn">🌌 Switch Universe</button>
+              <button class="hub-action-btn" id="hubContinueAdventureBtn">📖 Continue Adventure</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Audio placeholder elements -->
+  <div class="audio-hooks" id="audioHooks" aria-hidden="true">
+    <div class="audio-hook" id="bgMusicHook" data-type="music"></div>
+    <div class="audio-hook" id="sfxHook" data-type="sfx"></div>
+    <div class="audio-hook" id="voiceHook" data-type="voice"></div>
+  </div>
+
+  <script src="app-state.js"></script>
+  <script src="app-navigation.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
