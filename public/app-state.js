@@ -124,7 +124,62 @@ const AppState = {
     universeSpecific: {}
   },
 
-  // User progress data
+  // Universe-specific progress data (kept completely separate per universe)
+  universeProgress: {},
+
+  initUniverseProgress() {
+    const universes = ['harrypotter', 'marvel', 'anime', 'space', 'pirates', 'mythology'];
+    let saved = {};
+    if (typeof localStorage !== 'undefined') {
+      try {
+        saved = JSON.parse(localStorage.getItem('cv.universe_progress.v1')) || {};
+      } catch (e) {
+        saved = {};
+      }
+    }
+    universes.forEach(u => {
+      this.universeProgress[u] = {
+        points: saved[u]?.points ?? 0,
+        badges: Array.isArray(saved[u]?.badges) ? saved[u].badges : [],
+        learnedConcepts: Array.isArray(saved[u]?.learnedConcepts) ? saved[u].learnedConcepts : [],
+        adventureHistory: Array.isArray(saved[u]?.adventureHistory) ? saved[u].adventureHistory : []
+      };
+    });
+    this.syncUserProgress();
+  },
+
+  saveUniverseProgress() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('cv.universe_progress.v1', JSON.stringify(this.universeProgress));
+    } catch (e) {}
+  },
+
+  getUniverseProgress(u) {
+    const key = u || this.currentUniverse || 'harrypotter';
+    if (!this.universeProgress[key]) {
+      this.universeProgress[key] = {
+        points: 0,
+        badges: [],
+        learnedConcepts: [],
+        adventureHistory: []
+      };
+    }
+    return this.universeProgress[key];
+  },
+
+  syncUserProgress() {
+    const up = this.getUniverseProgress();
+    this.userProgress = {
+      points: up.points,
+      badges: up.badges,
+      learnedConcepts: up.learnedConcepts,
+      currentAdventure: null,
+      adventureHistory: up.adventureHistory
+    };
+  },
+
+  // Active user progress view for the current universe
   userProgress: {
     points: 0,
     badges: [],
@@ -151,12 +206,17 @@ const AppState = {
   // State transition methods
   setState(newState) {
     this.currentState = newState;
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+      document.querySelectorAll('.screen').forEach(s => { s.scrollTop = 0; });
+    }
     this.notifyStateChange();
   },
 
   setUniverse(universeKey) {
     this.currentUniverse = universeKey;
     this.character.universe = universeKey;
+    this.syncUserProgress();
     this.applyUniverseTheme();
   },
 
@@ -197,20 +257,34 @@ const AppState = {
     };
   },
 
-  // Progress management
-  addPoints(points) {
-    this.userProgress.points += points;
+  // Progress management (per universe - never combined)
+  addPoints(points, universe) {
+    const u = universe || this.currentUniverse || 'harrypotter';
+    const up = this.getUniverseProgress(u);
+    up.points = Math.max(0, (up.points || 0) + points);
+    this.saveUniverseProgress();
+    this.syncUserProgress();
   },
 
-  addBadge(badge) {
-    if (!this.userProgress.badges.includes(badge)) {
-      this.userProgress.badges.push(badge);
+  addBadge(badge, universe) {
+    const u = universe || this.currentUniverse || 'harrypotter';
+    const up = this.getUniverseProgress(u);
+    const badgeId = typeof badge === 'string' ? badge : badge.id;
+    const exists = up.badges.some(b => (typeof b === 'string' ? b === badgeId : b.id === badgeId));
+    if (!exists) {
+      up.badges.push(badge);
+      this.saveUniverseProgress();
+      this.syncUserProgress();
     }
   },
 
-  addLearnedConcept(concept) {
-    if (!this.userProgress.learnedConcepts.includes(concept)) {
-      this.userProgress.learnedConcepts.push(concept);
+  addLearnedConcept(concept, universe) {
+    const u = universe || this.currentUniverse || 'harrypotter';
+    const up = this.getUniverseProgress(u);
+    if (!up.learnedConcepts.includes(concept)) {
+      up.learnedConcepts.push(concept);
+      this.saveUniverseProgress();
+      this.syncUserProgress();
     }
   },
 
@@ -242,13 +316,13 @@ const AppState = {
   canNavigateTo(targetState) {
     // Define navigation rules
     const transitions = {
-      UNIVERSE_SELECTION: ['CHARACTER_CREATION'],
+      UNIVERSE_SELECTION: ['CHARACTER_CREATION', 'HUB'],
       CHARACTER_CREATION: ['UNIVERSE_SELECTION', 'MISSION_SELECTION', 'HUB'],
       MISSION_SELECTION: ['CHARACTER_CREATION', 'HUB', 'CINEMATIC_ADVENTURE'],
-      CINEMATIC_ADVENTURE: ['MISSION_SELECTION', 'CHARACTER_CHALLENGE'],
+      CINEMATIC_ADVENTURE: ['MISSION_SELECTION', 'CHARACTER_CHALLENGE', 'CONCEPT_UNLOCKED', 'HUB'],
       CHARACTER_CHALLENGE: ['CINEMATIC_ADVENTURE', 'CONCEPT_UNLOCKED'],
-      CONCEPT_UNLOCKED: ['CHARACTER_CHALLENGE', 'LEARN_IN_DETAIL', 'HUB'],
-      LEARN_IN_DETAIL: ['CONCEPT_UNLOCKED', 'HUB'],
+      CONCEPT_UNLOCKED: ['CHARACTER_CHALLENGE', 'LEARN_IN_DETAIL', 'MISSION_SELECTION', 'UNIVERSE_SELECTION', 'HUB'],
+      LEARN_IN_DETAIL: ['CONCEPT_UNLOCKED', 'MISSION_SELECTION', 'HUB'],
       HUB: ['MISSION_SELECTION', 'UNIVERSE_SELECTION', 'CHARACTER_CREATION']
     };
 
@@ -287,11 +361,12 @@ const CharacterStore = {
    * Caps at 12 records (oldest updatedAt dropped first).
    * Returns the saved record.
    */
-  save(character) {
+  save(character, progress) {
     if (!character || !character.universe || !character.name) return null;
     const list = this._read();
     const key = character.universe + '|' + character.name.trim().toLowerCase();
     const existing = list.find(c => (c.universe + '|' + c.name.toLowerCase()) === key);
+    const prog = progress || (typeof AppState !== 'undefined' ? AppState.getUniverseProgress(character.universe) : null) || {};
     const record = {
       id: existing?.id || Date.now().toString(36),
       universe: character.universe,
@@ -302,6 +377,11 @@ const CharacterStore = {
       role: character.role || '',
       personality: character.personality || [],
       universeSpecific: character.universeSpecific || {},
+      points: prog.points ?? existing?.points ?? 0,
+      adventuresCount: prog.adventureHistory ? prog.adventureHistory.length : (existing?.adventuresCount ?? 0),
+      badges: prog.badges ?? existing?.badges ?? [],
+      learnedConcepts: prog.learnedConcepts ?? existing?.learnedConcepts ?? [],
+      adventureHistory: prog.adventureHistory ?? existing?.adventureHistory ?? [],
       updatedAt: Date.now()
     };
     if (existing) {
@@ -327,6 +407,16 @@ const CharacterStore = {
     this._write(list);
   }
 };
+
+// Initialize universe-partitioned progress immediately
+if (typeof AppState !== 'undefined' && typeof AppState.initUniverseProgress === 'function') {
+  AppState.initUniverseProgress();
+}
+
+if (typeof window !== 'undefined') {
+  window.AppState = AppState;
+  window.CharacterStore = CharacterStore;
+}
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

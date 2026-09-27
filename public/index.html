@@ -165,29 +165,36 @@
         <div class="mission-selection-header">
           <button class="back-btn" id="backToCharacterBtn">← Back to Character</button>
           <div class="character-info-bar glass" id="characterInfoBar">
-            <div class="character-mini-avatar" id="miniCharacterAvatar">👤</div>
-            <div class="character-mini-info">
-              <p class="mini-character-name" id="miniCharacterName">Hero Name</p>
-              <p class="mini-character-universe" id="miniCharacterUniverse">Universe</p>
+            <div class="character-info-primary">
+              <div class="character-mini-avatar" id="miniCharacterAvatar">👤</div>
+              <div class="character-mini-info">
+                <p class="mini-character-name" id="miniCharacterName">Hero Name</p>
+                <p class="mini-character-universe" id="miniCharacterUniverse">Universe</p>
+              </div>
             </div>
+            <!-- Saved characters selector for immediate protagonist switching -->
+            <div class="mission-saved-strip" id="missionSavedCharactersStrip" aria-label="Switch protagonist">
+              <!-- Dynamically populated character selector chips -->
+            </div>
+            <button type="button" class="switch-hero-btn" id="missionSwitchHeroBtn" title="Switch or create character">⚙️ Character</button>
           </div>
           <h2 class="screen-title">Choose Your Mission & Learn</h2>
           <p class="screen-subtitle">Select a mission that contains the knowledge you seek.</p>
         </div>
 
         <!-- Topic Input Area -->
-        <div id="topicInputArea" class="glass" style="padding: 20px; border-radius: 16px; margin-bottom: 24px; text-align: center;">
-          <label class="form-label" for="missionTopicInput" style="display: block; margin-bottom: 10px; font-size: 1.05em;">
+        <div id="topicInputArea" class="glass topic-input-card">
+          <label class="form-label topic-input-label" for="missionTopicInput">
             🧠 What do you want to learn today?
           </label>
-          <input type="text" id="missionTopicInput" class="form-input"
-            placeholder="e.g. Photosynthesis, Black Holes, Fractions…"
-            style="width: 100%; max-width: 440px; margin-bottom: 12px; text-align: center;" />
-          <br />
-          <button class="primary-btn" id="startMissionBtn" style="min-width: 200px;">
-            Start Mission →
-          </button>
-          <div id="missionLoadingState" style="display: none; margin-top: 12px; opacity: 0.7;">
+          <div class="topic-input-row">
+            <input type="text" id="missionTopicInput" class="form-input topic-input-field"
+              placeholder="e.g. Photosynthesis, Black Holes, Fractions…" />
+            <button class="primary-btn" id="startMissionBtn">
+              Start Mission →
+            </button>
+          </div>
+          <div id="missionLoadingState" style="display: none; margin-top: 8px; font-size: 0.88rem; opacity: 0.85;">
             ⏳ Your adventure is being created by AI… hang tight!
           </div>
         </div>
@@ -246,27 +253,26 @@
         </div>
 
         <div class="adventure-stage" id="adventureStage">
-          <!-- Main stage — the scene lives here and fills the viewport -->
           <div class="adventure-scene" id="adventureScene" aria-label="Story scene">
             <div class="scene-background" id="sceneBackground" aria-hidden="true"></div>
-            <div class="scene-location" id="sceneLocationLabel" aria-hidden="true"></div>
 
-            <!-- Cast of characters on stage (lightweight SVG figures) -->
-            <div class="characters-display" id="charactersDisplay" aria-label="Characters on stage"></div>
-
-            <!-- Center-stage effect layer: spells, discoveries, environment changes -->
-            <div class="effect-layer" id="actionMomentsArea" aria-hidden="true"></div>
-
-            <!-- Lower event stream (secondary — the stage carries the story) -->
-            <div class="scene-stream" id="sceneStream">
-              <div class="stream-log" id="streamLog" role="log" aria-live="polite"></div>
-              <button type="button" class="story-skip-btn" id="storySkipBtn" title="Skip to your decision">Skip ▶</button>
+            <!-- COMPACT ARENA: Location Badge & Compact Cast Strip (Animation Size Reduced) -->
+            <div class="stage-arena compact-arena" id="stageArena">
+              <div class="scene-location" id="sceneLocationLabel" aria-hidden="true"></div>
+              <div class="characters-display compact-cast" id="charactersDisplay" aria-label="Cast in scene"></div>
+              <div class="effect-layer" id="actionMomentsArea" aria-hidden="true"></div>
             </div>
 
-            <!-- Learner interaction / choice overlay (hidden until a decision is asked) -->
-            <div class="user-interaction-area glass hidden-element" id="userInteractionArea">
-              <p class="interaction-question" id="interactionQuestionText"></p>
-              <div class="interaction-options" id="interactionOptions"></div>
+            <!-- STORY HERO CONTAINER: Entire scene story appears at once -->
+            <div class="story-chronicle-panel glass" id="storyChroniclePanel">
+              <div class="story-beats-flow" id="storyBeatsFlow">
+                <!-- All scene narrative, dialogue, and action beats render here at once -->
+              </div>
+
+              <!-- Choice / Next Scene Action Area at the bottom of the story -->
+              <div class="story-action-area" id="storyActionArea">
+                <!-- Dynamically rendered: choices or continue button -->
+              </div>
             </div>
           </div>
         </div>
@@ -343,36 +349,46 @@
         </div>
 
         <div class="concept-content glass">
+          <!-- Reward / Achievement Banner -->
+          <div class="concept-reward-badge" id="conceptRewardBadge">
+            <span class="reward-sparkle">🏆</span>
+            <span class="reward-title">CONCEPT UNLOCKED</span>
+            <span class="reward-points" id="rewardPoints">+100 Knowledge Points</span>
+          </div>
+
           <div class="concept-header">
-            <p class="concept-eyebrow">✨ CONCEPT UNLOCKED</p>
             <h2 class="concept-title" id="conceptTitle">Photosynthesis</h2>
           </div>
 
           <div class="concept-explanation">
-            <h3 class="explanation-label">Short Explanation</h3>
+            <h3 class="explanation-label">What You Discovered</h3>
             <p class="explanation-text" id="conceptShortExplanation">
               Plants use sunlight, water, and carbon dioxide to create energy and oxygen.
             </p>
           </div>
 
           <div class="adventure-connection">
-            <h3 class="connection-label">Adventure Connection</h3>
+            <h3 class="connection-label">How It Connects to Your Adventure</h3>
             <p class="connection-text" id="adventureConnectionText">
               This concept explains why the enchanted greenhouse plants were thriving in sunlight.
             </p>
           </div>
 
           <div class="concept-actions">
-            <button class="action-btn primary-action" id="nextAdventureBtn">
+            <button class="action-btn primary-action" id="learnInDetailBtn">
+              <span class="action-icon">✨</span>
+              <span class="action-text">Learn in Detail</span>
+            </button>
+            <button class="action-btn secondary-action" id="conceptViewHubBtn">
+              <span class="action-icon">🏆</span>
+              <span class="action-text">Hero Hub & Badges</span>
+            </button>
+            <button class="action-btn secondary-action" id="nextAdventureBtn">
               <span class="action-icon">🚀</span>
               <span class="action-text">Next Adventure</span>
             </button>
-            <button class="action-btn secondary-action" id="learnInDetailBtn">
-              <span class="action-icon">📚</span>
-              <span class="action-text">Learn in Detail</span>
-            </button>
             <button class="action-btn secondary-action" id="conceptBackUniverseBtn">
-              <span class="action-icon">🌌</span>
+              <span class="action-icon">←</span>
               <span class="action-text">Back to Universe</span>
             </button>
           </div>
@@ -414,39 +430,21 @@
             </div>
           </div>
 
-          <!-- Visual explanations -->
-          <div class="detail-section glass">
-            <h3 class="detail-section-title">Visual Explanations</h3>
+          <!-- Core Concept Takeaways -->
+          <div class="detail-section glass" id="visualBlueprintSection">
+            <h3 class="detail-section-title">Core Concept Takeaways</h3>
             <div class="visual-content" id="visualExplanations">
-              <div class="diagram-placeholder glass">
-                <span class="diagram-icon">📊</span>
-                <p class="diagram-text">Diagrams and animations will appear here</p>
+              <div class="concept-takeaway-card glass" id="conceptTakeawayCard">
+                <!-- Dynamically populated key points & concept summary -->
               </div>
             </div>
           </div>
 
-          <!-- Practice questions -->
+          <!-- Interactive Practice -->
           <div class="detail-section glass">
-            <h3 class="detail-section-title">Practice Questions</h3>
+            <h3 class="detail-section-title">Interactive Practice</h3>
             <div class="practice-content" id="practiceQuestions">
-              <p>Practice questions to test your understanding...</p>
-            </div>
-          </div>
-
-          <!-- Mini quiz -->
-          <div class="detail-section glass">
-            <h3 class="detail-section-title">Mini Quiz</h3>
-            <div class="mini-quiz-content" id="miniQuiz">
-              <p>Quick quiz to reinforce learning...</p>
-            </div>
-          </div>
-
-          <!-- Animated teaching character placeholder -->
-          <div class="teaching-character-placeholder glass" id="teachingCharacterPlaceholder">
-            <div class="teaching-placeholder-content">
-              <span class="teaching-icon">🎓</span>
-              <p class="teaching-text">Personalized Animated Teaching Character</p>
-              <p class="teaching-subtext">Your AI tutor will appear here in future updates</p>
+              <p>Practice questions will appear here...</p>
             </div>
           </div>
         </div>
@@ -463,6 +461,7 @@
         <div class="hub-header">
           <h1 class="hub-title">ConceptVerse Hub</h1>
           <p class="hub-subtitle">Your multiversal learning center</p>
+          <div class="hub-universe-tabs" id="hubUniverseTabs"></div>
         </div>
 
         <div class="hub-content">
@@ -491,24 +490,25 @@
             </div>
           </div>
 
-          <!-- Points and badges -->
+          <!-- Points and badges (tracked separately per universe) -->
           <div class="hub-card glass progress-card" id="progressCard">
-            <h3 class="card-title">Your Progress</h3>
+            <h3 class="card-title" id="hubProgressTitle">Your Progress</h3>
             <div class="points-display">
               <span class="points-large-icon">⭐</span>
               <span class="points-large-value" id="hubLargePoints">0</span>
+              <span class="points-unit" id="hubPointsUniverseLabel">pts</span>
             </div>
             <div class="badges-section">
-              <h4 class="badges-title">Badges Earned</h4>
+              <h4 class="badges-title" id="hubBadgesTitle">Badges Earned</h4>
               <div class="badges-grid" id="badgesGrid">
                 <div class="badge-placeholder">🏆 No badges yet</div>
               </div>
             </div>
           </div>
 
-          <!-- Learned concepts -->
+          <!-- Learned concepts (tracked separately per universe) -->
           <div class="hub-card glass concepts-card" id="conceptsCard">
-            <h3 class="card-title">Learned Concepts</h3>
+            <h3 class="card-title" id="hubConceptsTitle">Learned Concepts</h3>
             <div class="concepts-list" id="conceptsList">
               <div class="concept-placeholder">No concepts learned yet</div>
             </div>
@@ -541,6 +541,5 @@
 
   <script src="app-state.js"></script>
   <script src="app-navigation.js"></script>
-  <script src="script.js"></script>
 </body>
 </html>

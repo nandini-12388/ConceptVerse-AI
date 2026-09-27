@@ -136,9 +136,9 @@ app.post('/generate', async (req, res) => {
     });
   }
 
+  const charName = (character && typeof character === 'object' && character.name) ? character.name : "Adventurer";
   let characterContext = "";
   if (character && typeof character === 'object') {
-    const charName = character.name || "Adventurer";
     const traits = Object.entries(character)
       .filter(([k, v]) => k !== 'universe' && k !== 'name' && v)
       .map(([k, v]) => `- ${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
@@ -156,108 +156,70 @@ Address the player directly as ${charName} in dialogue and choice questions. Wea
   }
 
   const STORY_INSTRUCTION = `
-CRITICAL STORYTELLING FORMAT — READ CAREFULLY.
+CRITICAL STORYTELLING INSTRUCTIONS — HIGH-STAKES CINEMATIC ADVENTURE:
 
-Your job is to write a SHORT, interactive, branching CINEMATIC adventure. The learner is the protagonist, standing inside this universe. The story must fulfill the MASTER PATTERN:
-    character action → reaction → environmental change → learner involvement → decision → consequence → escalation → solution
-It must NEVER read as: dialogue, dialogue, dialogue, click, dialogue, click.
+1. ABSOLUTELY ZERO TUTORING / NO STUDENT-TEACHER DYNAMICS:
+   - The player is a HERO / ADVENTURER, NOT a student attending a class or lecture.
+   - BANNED: Definitions, study tips, classroom lectures ("Remember, A pairs with T and C with G...", "Let's review how this works...", "Good job student!").
+   - NEVER have characters explain science concepts directly in dialogue like a teacher.
+   - The characters are comrades, rivals, or adversaries caught in a high-stakes, fast-moving crisis!
 
-The story is a sequence of EVENTS that unfold, not a chat transcript and not a lecture. Every scene contains a handful of story BEATS. A beat is one meaningful story moment, chosen from these kinds:
+2. MANDATORY CLASHING MULTI-CHARACTER ENSEMBLE IN EVERY SCENE:
+   Every single scene MUST feature active dialogue and interactions between at least 2 to 3 distinct characters from this universe, each fulfilling their true personality archetype:
+   - PROTAGONIST / ALLY (e.g., Harry, Hermione, Tony Stark, Captain Nova, Kai, Shiva):
+     Backs up the player, uses their powers/skills/loyalty, and offers sharp tactical observations without giving the answer away.
+   - ANTAGONIST / RIVAL (e.g., Draco Malfoy, Loki, The Asura, Captain Flint, Riku, Rival Challenger):
+     MOCKS the player, sneers, doubts their capabilities, and challenges them with biting snark ("You actually think your wand-work can crack this serpentine lock, ${charName}? Even Crabbe would know better!").
+   - COMIC RELIEF (e.g., Ron Weasley, Spider-Man, Bolt, Boomer, Riku, Narada):
+     Panics comically, cracks sarcastic or absurd jokes, makes ridiculous guesses, and keeps the energy funny and human ("Bloody hell, if that glowing rune blows up, I'm defecting to Durmstrang!").
+   - THE PLAYER (${charName}):
+     Addressed directly by name, physically present, wielding their chosen weapon, power, and role to make heroic choices!
 
-  { "t": "dialogue",  "speaker": "<who>", "text": "<short line>", "mood": "<how they say it>" }
-      A character speaks. It MUST respond to the previous beat (what was just said or just happened),
-      never float in isolation. Dialogues are short — one or two sentences.
+3. REAL UNIVERSE FLAVOR, POWERS & DANGERS:
+   - Harry Potter: Named spells (Incendio, Alohomora, Protego, Lumos Maxima, Expelliarmus), wand movements, bubbling cauldrons, dark artifacts, magical creatures, shifting staircases.
+   - Marvel: Arc reactor surges, Stark repulsors, web-shooters, vibranium shields, Mjolnir lightning, JARVIS tactical alerts.
+   - Space: Hull breaches, plasma conduit fires, gravity drive anomalies, AI warning klaxons, scanner telemetry.
+   - Anime: Martial stances, ki/chakra bursts, spirit seals, signature strikes, aura flare-ups.
+   - Mythology: Divine weapons (Trishula, Sudarshana Chakra, Vajra), cosmic disturbances, celestial mantras, asura boons.
+   - Pirates: Roaring broadside cannons, cutlasses, cursed Aztec gold, swirling whirlpools, kraken tentacles.
 
-  { "t": "reaction",  "speaker": "<who>", "text": "<short line>", "mood": "<sneering / relieved / etc>" }
-      A character reacts to what just happened before speaking. Same as dialogue but explicitly reactive.
+4. THE CONCEPT IS THE PHYSICAL/MAGICAL PUZZLE MECHANISM:
+   The learning topic (e.g. DNA Base Pairing, Gravity, Electrical Conductivity) is the invisible law governing the crisis. Characters discover it by observing physical reactions (e.g. mismatched runes sparking violently, energy conduits rejecting mismatched polarity), NOT by reciting a textbook!
 
-  { "t": "action",   "by": "<who or 'you'>", "what": "<what is physically done>", "fx": "<one of: spell, probe, attack, power, entry, move, grab, inspect>", "text": "<one-line description of the visible result>" }
-      Something PHYSICALLY HAPPENS. The world sees it. The effect must change the situation or reveal info.
+5. BEAT SHAPE:
+   Each scene contains 5-8 dynamic beats:
+   - Dialogue beat: { "t": "dialogue", "speaker": "<Character Name>", "role": "ally" | "rival" | "comic" | "learner", "text": "<1-2 vivid, snappy sentences in-character>", "mood": "<sneering / panicked / resolute / sarcastic>" }
+   - Action beat: { "t": "action", "by": "<speaker or 'you'>", "text": "<physical action with powers/spells/weapons>", "fx": "spell" | "power" | "attack" | "inspect" }
+   - Environment beat: { "t": "env", "text": "<environmental shift or danger flare-up>", "fx": "fire" | "glow" | "shake" | "storm" }
+   - Discovery beat: { "t": "discovery", "text": "<the in-universe clue or law the player uncovers>" }
+   - Choice beat: { "t": "choice", "question": "<High-stakes decision asked directly to ${charName}>", "options": [ { "text": "<Bold in-universe action>", "isCorrect": true/false, "feedback": "<Immediate narrative consequence and clear educational logic>" } ] }
 
-  { "t": "env",      "text": "<what changes in the environment>", "fx": "<one of: frost, fire, shake, glow, storm, fade>" }
-      The environment/object changes: a light flickers, the floor cracks, frost forms, the room darkens.
-      This ALWAYS alters the situation the learner is in.
+6. SCENE FLOW:
+   - Produce 3-4 scenes total with 2-3 interactive choices.
+   - Scenes branch and rejoin cleanly.
+   - Keep dialogue short, snappy, and full of personality!
 
-  { "t": "focus",    "text": "<one line that pulls the learner into the moment>" }
-      A narrator-style line addressed to the learner: "The room falls silent. Everyone waits for you."
-
-  { "t": "discovery", "text": "<a clue the learner now knows>", "fx": "reveal" }
-      The learner discovers something useful that changes what they should do next.
-
-  { "t": "choice",   "question": "<directly asks the learner, as YOU>",
-      "options": [ { "text": "<what the learner chooses to DO>", "next": "<scene id>", "isCorrect": true, "feedback": "<1-2 sentence educational reason>" } ] }
-      The learner makes a decision that drives the story forward.
-
-SCENE STRUCTURE — output scenes with this shape. Each scene is a LOCATION with a single unfolding situation:
-
-  { "id": "scene_1", "location": "<named place, one line>", "next": "<scene id>", "beats": [ <4-7 beats in order> ] }
-
-Every scene MUST include a "next" field: the id of the scene that follows when this scene ends WITHOUT a choice at its end. The engine uses it, so:
-  - A scene whose story continues automatically (no choice) sets its "next".
-  - A scene that ENDS on a choice beat does not need "next" (options carry their own "next"), but it still helps to keep it.
-  - The final scene sets "next": null or omits it.
-
-Beat ordering rules:
-  1. Use a MIX of kinds: dialogue, reactions, actions, an environmental change, a focus line, a discovery.
-  2. Vary them. Do NOT put more than 2 dialogue beats in a row before something else happens.
-  3. The learner must be pulled into the story (use "focus" and/or a "choice") before their decision.
-  4. Every choice's options are concrete ACTIONS the learner takes in that situation, not abstract answers.
-  5. Two separate scenes (e.g. scene_2a and scene_2b) may branch from one choice, but all branches REJOIN into ONE later scene. That rejoin scene sits AFTER the branch scenes in the array and moves the story forward; branch scenes never loop back into a scene that would replay.
-  6. The engine advances scene-by-scene using "next" (never by array order). Keep the array order in the same sequence your "next" links describe.
-
-ADVENTURE SHAPE:
-  - Mission: title, problem, reward. The concept the learner typed is the MECHANISM that solves the problem — the story is built AROUND it, never stapled onto it.
-  - Produce 3-4 short scenes total and 2-3 learner choices in the whole adventure.
-  - Wrong choices must NOT end the mission. They cause an interesting in-universe consequence (see "action"/"env") plus constructive feedback, then rejoin the story.
-  - Every scene, the learner is physically present as themselves.
-
-CHARACTER BEHAVIOR:
-  - Do not make every character a polite tutor. Characters disagree, tease, doubt, argue, mislead and get frustrated.
-  - Each character must react to what the character BEFORE them actually said or did.
-  - When a character is proven wrong, they react in-character (deflection, stubbornness, grudging respect, humor) — never a cheerful "great question!".
-  - Use 2-4 characters max. Only include characters who change the story.
-
-WRITING RULES:
-  - Concise. Dialogue and text one or two sentences. Short words. Vivid but not flowery.
-  - Concepts unfold through what characters DO and NOTICE, never through a lecture.
-  - The ending must show the consequence of the learner's decisions and resolve the mission.
-
-FINAL JSON SHAPE — return ONLY this JSON, nothing before or after, no code fences:
-
+FINAL JSON SHAPE — Return ONLY this JSON:
 {
   "mission": { "title": "...", "problem": "...", "reward": "..." },
   "scenes": [
-    { "id": "scene_1", "location": "...", "next": "scene_2a", "beats": [ ... ] },
-    { "id": "scene_2a", "location": "...", "next": "scene_3", "beats": [ ... ] },
-    { "id": "scene_2b", "location": "...", "beats": [ ... choice with "next":"scene_3" ... ] },
+    { "id": "scene_1", "location": "...", "next": "scene_2", "beats": [ ... ] },
+    { "id": "scene_2", "location": "...", "next": "scene_3", "beats": [ ... ] },
     { "id": "scene_3", "location": "...", "beats": [ ... ] }
   ],
-  "discovery": { "title": "<name of the concept>", "text": "<2-3 accurate beginner sentences, connected to what just happened>" },
+  "discovery": { "title": "<Topic Name>", "text": "<2-3 clear summary sentences explaining how the concept worked in the mission>" },
   "details": {
-    "explanation": ["<3-5 short bullet sentences, plain language>"],
-    "realWorld": ["<2-3 real-world examples>"],
-    "practice": { "question": "<one question>", "options": ["<option>", "<option>", "<option>", "<option>"], "answer": 0, "explain": "<why>" }
+    "explanation": ["<3-4 key principles, plain language>"],
+    "realWorld": ["<2-3 real-world applications>"],
+    "practice": { "question": "...", "options": ["..."], "answer": 0, "explain": "..." }
   },
-  "ending": { "text": "<in-universe resolution>", "funnyLine": "<one memorable character line>" }
+  "ending": { "text": "<Thrilling cinematic aftermath resolving the crisis>", "funnyLine": "<Memorable comedic or rival quip>" }
 }
-
-BEFORE RETURNING, silently verify:
-  - Does every non-choice beat respond to the beat BEFORE it?
-  - Is the learner physically in the scene and addressed as themselves?
-  - Do the characters argue/tease/doubt like real people instead of teaching?
-  - Are action and environmental beats physically meaningful (they change or reveal something)?
-  - Is every choice an ACTION the learner takes, with a visible consequence?
-  - Do all branches rejoin? Does every "next" scene id exist?
-  - Is the concept the mechanism that solves the problem?
-  - Is everything short enough to feel like a 3-4 minute scene?
 `;
 
   let content = null;
 
   try {
-    // Retry loop: the open model occasionally returns malformed JSON or hits a
-    // transient API error on the first attempt. Two attempts keeps the mission
-    // playable without hammering the free tier.
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
@@ -273,17 +235,17 @@ BEFORE RETURNING, silently verify:
             {
               role: "user",
               content: `
-Topic: ${topic}
+MISSION TOPIC: ${topic}
+PLAYER HERO: ${character?.name || 'Adventurer'} (Universe: ${theme})
+${character ? `TRAITS: Power=${character.power || 'Courage'}, Weapon=${character.weapon || 'Focus'}, Role=${character.role || 'Hero'}, Personality=${Array.isArray(character.personality) ? character.personality.join(', ') : character.personality || 'Determined'}` : ''}
 
-The student is a complete beginner.
-
-Teach this topic using the selected universe and character.
-
-Make learning feel like a natural part of the interactive branching adventure rather than a classroom lesson.
-
-Keep the explanation accurate, engaging, and easy to understand.
-
-IMPORTANT OUTPUT RULE: Return ONLY a single valid JSON object exactly as specified in the system message. No prose, no markdown, no code fences, no extra text before or after the JSON.
+Generate an epic, high-stakes cinematic adventure where ${character?.name || 'the player'} and their companions confront a genuine crisis in the ${theme} universe!
+The academic concept (${topic}) must serve as the real physical/magical/technological law of the world that solves the crisis.
+CRITICAL RULES:
+- Absolutely NO classroom/tutoring dialogue. Do not lecture!
+- Include multiple characters actively speaking: allies helping, antagonists/rivals mocking, and comic relief cracking jokes.
+- Use authentic universe powers, spells, and dangers!
+- Return ONLY valid JSON matching the schema.
 `
             }
           ],

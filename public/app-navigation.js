@@ -49,6 +49,9 @@ function handleStateChange(event) {
   const newState = event.detail.state;
   console.log("State changed to:", newState);
 
+  // Toggle viewport-lock for the cinematic adventure screen
+  document.body.classList.toggle('adventure-mode', newState === 'CINEMATIC_ADVENTURE');
+
   // Map state to screen ID
   const screenMap = {
     'UNIVERSE_SELECTION': 'universeSelectionScreen',
@@ -73,6 +76,10 @@ function handleStateChange(event) {
   if (newState === 'HUB') updateHubDisplay();
 }
 
+function updateNextButtonState() {
+  // Legacy stub from multi-step wizard - single-screen creation needs no step-button state
+}
+
 function showScreen(screenId) {
   console.log("Showing screen:", screenId);
   
@@ -82,14 +89,23 @@ function showScreen(screenId) {
     screen.classList.remove('active-screen');
     screen.classList.add('hidden-screen');
   });
+
+  // Always reset scroll on window, document, and container so screens always appear at top without scrolling
+  window.scrollTo(0, 0);
+  if (document.body) document.body.scrollTop = 0;
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  const page = document.querySelector('.page');
+  if (page) page.scrollTop = 0;
   
   // Show target screen
   const targetScreen = document.getElementById(screenId);
   if (targetScreen) {
     targetScreen.classList.remove('hidden-screen');
+    targetScreen.scrollTop = 0;
     // Small delay for animation
     setTimeout(() => {
       targetScreen.classList.add('active-screen');
+      window.scrollTo(0, 0);
     }, 50);
   } else {
     console.error("Screen not found:", screenId);
@@ -336,16 +352,33 @@ function loadSavedCharacter(rec) {
     universeSpecific: rec.universeSpecific || {}
   });
 
-  // Sync the form (only selects the same fields the user built it from)
+  // Restore progress into this universe's dedicated storage
+  if (typeof AppState.getUniverseProgress === 'function') {
+    const uProg = AppState.getUniverseProgress(rec.universe);
+    if (rec.points !== undefined) uProg.points = rec.points;
+    if (rec.badges !== undefined) uProg.badges = Array.isArray(rec.badges) ? [...rec.badges] : [];
+    if (rec.learnedConcepts !== undefined) uProg.learnedConcepts = Array.isArray(rec.learnedConcepts) ? [...rec.learnedConcepts] : [];
+    if (rec.adventureHistory !== undefined) uProg.adventureHistory = Array.isArray(rec.adventureHistory) ? [...rec.adventureHistory] : [];
+    AppState.saveUniverseProgress();
+    AppState.syncUserProgress();
+  } else {
+    if (rec.points !== undefined) AppState.userProgress.points = rec.points;
+    if (rec.badges !== undefined) AppState.userProgress.badges = Array.isArray(rec.badges) ? [...rec.badges] : [];
+    if (rec.learnedConcepts !== undefined) AppState.userProgress.learnedConcepts = Array.isArray(rec.learnedConcepts) ? [...rec.learnedConcepts] : [];
+    if (rec.adventureHistory !== undefined) AppState.userProgress.adventureHistory = Array.isArray(rec.adventureHistory) ? [...rec.adventureHistory] : [];
+  }
+
+  // Sync name input
   const nameInput = document.getElementById('characterName');
   if (nameInput) nameInput.value = rec.name;
 
-  const syncGroup = (btnClass, value, isMulti) => {
-    const buttons = document.querySelectorAll(btnClass);
+  // Helper: select buttons within a container by data-group or container id
+  const syncGroup = (groupAttr, value, isMulti) => {
+    const buttons = document.querySelectorAll(`[data-group="${groupAttr}"].option-btn, #${groupAttr}Options .option-btn`);
+    if (!buttons.length) return;
     if (value && Array.isArray(value)) {
       buttons.forEach(btn => {
-        const match = value.includes(btn.dataset.value);
-        btn.classList.toggle('selected', isMulti ? match : match && btn.dataset.value === value[0]);
+        btn.classList.toggle('selected', value.includes(btn.dataset.value));
       });
     } else if (value) {
       buttons.forEach(btn => {
@@ -353,17 +386,25 @@ function loadSavedCharacter(rec) {
       });
     }
   };
-  syncGroup('.power-option-btn', rec.power, false);
-  syncGroup('.weapon-option-btn', rec.weapon, false);
-  syncGroup('.role-option-btn', rec.role, false);
-  syncGroup('.personality-option-btn', rec.personality, true);
-  syncGroup('.appearance-option-btn', rec.appearance?.avatar, false);
+
+  syncGroup('power', rec.power, false);
+  syncGroup('weapon', rec.weapon, false);
+  syncGroup('role', rec.role, false);
+  syncGroup('personality', rec.personality, true);
+  // Appearance: avatar field
+  const appearanceVal = rec.appearance?.avatar || rec.appearance?.bodyType || '';
+  if (appearanceVal) {
+    document.querySelectorAll('[data-group="appearance"].option-btn, #appearanceOptions .option-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.value === appearanceVal);
+    });
+  }
 
   // Fire the existing preview pipeline so the KEEP button's validation works
   updateCharacterPreview();
-  if (typeof initializeCharacterOptions === 'function') initializeCharacterOptions();
   showToast(`✅ Loaded ${rec.name}`);
 }
+
+
 
 // Compact lore-authentic options dataset (4 Powers, 4 Weapons, 4 Roles, 5 Personalities, 4 Appearances per universe)
 const UNIVERSE_OPTIONS = {
@@ -925,7 +966,7 @@ function initializeSingleSelectGroup(groupName, predefinedOptions, customBtnId, 
       btn.classList.add('selected');
       AppState.character[groupName] = option;
       updateCharacterPreview();
-      updateNextButtonState(currentStepIndex);
+      updateNextButtonState();
     };
     
     container.appendChild(btn);
@@ -947,13 +988,13 @@ function initializeSingleSelectGroup(groupName, predefinedOptions, customBtnId, 
       AppState.character[groupName] = '';
     }
     updateCharacterPreview();
-    updateNextButtonState(currentStepIndex);
+    updateNextButtonState();
   };
   
   customInput.oninput = (e) => {
     AppState.character[groupName] = e.target.value.trim();
     updateCharacterPreview();
-    updateNextButtonState(currentStepIndex);
+    updateNextButtonState();
   };
 }
 
@@ -991,7 +1032,7 @@ function initializeMultiSelectGroup(groupName, predefinedOptions, customBtnId, c
         }
       }
       updateCharacterPreview();
-      updateNextButtonState(currentStepIndex);
+      updateNextButtonState();
     };
     
     container.appendChild(btn);
@@ -1040,14 +1081,14 @@ function addCustomPersonality(trait, customInput) {
           AppState.character.personality = updated.filter(t => t !== trait);
         }
         updateCharacterPreview();
-        updateNextButtonState(currentStepIndex);
+        updateNextButtonState();
       };
       
       container.appendChild(customTag);
     }
     
     updateCharacterPreview();
-    updateNextButtonState(currentStepIndex);
+    updateNextButtonState();
     showToast(`Added custom trait: "${trait}"`);
   }
   
@@ -1073,7 +1114,7 @@ function initializeAppearanceOptions(appearances) {
       btn.classList.add('selected');
       AppState.character.appearance = { id: option.id, type: option.label, icon: option.icon };
       updateCharacterPreview();
-      updateNextButtonState(currentStepIndex);
+      updateNextButtonState();
     };
     
     appearanceOptions.appendChild(btn);
@@ -1118,7 +1159,7 @@ function initializeUniverseSpecificOptions(attributeGroups) {
         }
         AppState.character.universeSpecific[group.id] = opt;
         updateCharacterPreview();
-        updateNextButtonState(currentStepIndex);
+        updateNextButtonState();
       };
       
       chipsDiv.appendChild(chip);
@@ -1310,6 +1351,38 @@ function updateCharacterInfoBar() {
   
   if (miniCharacterUniverse) {
     miniCharacterUniverse.textContent = AppState.universeThemes[AppState.currentUniverse]?.name || 'Universe';
+  }
+
+  // Populate saved character strip
+  const strip = document.getElementById('missionSavedCharactersStrip');
+  if (strip) {
+    strip.innerHTML = '';
+    const saved = CharacterStore.all(AppState.currentUniverse);
+    saved.forEach(rec => {
+      const chip = document.createElement('button');
+      chip.className = 'saved-char-chip';
+      const isActive = rec.name === AppState.character.name;
+      if (isActive) chip.classList.add('selected-active');
+      chip.title = rec.name;
+      chip.textContent = (rec.appearance?.avatar ? rec.appearance.avatar.charAt(0).toUpperCase() : rec.name.charAt(0));
+      chip.addEventListener('click', () => {
+        loadSavedCharacter(rec);
+        // Update chip highlight
+        strip.querySelectorAll('.saved-char-chip').forEach(c => c.classList.remove('selected-active'));
+        chip.classList.add('selected-active');
+        updateCharacterInfoBar();
+      });
+      strip.appendChild(chip);
+    });
+  }
+
+  // Wire the Switch Hero button
+  const switchBtn = document.getElementById('missionSwitchHeroBtn');
+  if (switchBtn && !switchBtn._wired) {
+    switchBtn._wired = true;
+    switchBtn.addEventListener('click', () => {
+      AppState.navigateTo(AppState.NAVIGATION_STATES.CHARACTER_CREATION);
+    });
   }
 }
 
@@ -1509,7 +1582,7 @@ function normalizeBeat(b) {
   if (!b || typeof b !== 'object') return null;
   let beats = b.beats || b.story || b.events;
   if (Array.isArray(beats) && beats.length) return beats.map(normalizeBeat).filter(Boolean);
-  const t = b.type || b.kind || b.event || (b.speaker ? 'dialogue' : 'env');
+  const t = b.t || b.type || b.kind || b.event || (b.options ? 'choice' : (b.speaker ? 'dialogue' : 'env'));
   // Choice beats from the model often use "question" — accept both.
   const out = { t, text: b.text || b.question || b.narration || b.description || '' };
   if (b.speaker)   out.speaker = b.speaker;
@@ -1638,16 +1711,17 @@ function renderCinematicAdventure(lesson) {
   const ap = document.getElementById('adventurePoints');
   if (ap) ap.textContent = AppState.userProgress.points;
 
-  const streamLog = document.getElementById('streamLog');
   const charsDisp = document.getElementById('charactersDisplay');
   const fxLayer   = document.getElementById('actionMomentsArea');
   const locLabel  = document.getElementById('sceneLocationLabel');
-  const interactionArea = document.getElementById('userInteractionArea');
-  if (streamLog)  streamLog.innerHTML = '';
-  if (charsDisp)  charsDisp.innerHTML = '';
-  if (fxLayer)    fxLayer.innerHTML   = '';
-  if (locLabel)   locLabel.textContent = '';
-  if (interactionArea) interactionArea.classList.add('hidden-element');
+  const flow      = document.getElementById('storyBeatsFlow');
+  const actions   = document.getElementById('storyActionArea');
+
+  if (charsDisp) charsDisp.innerHTML = '';
+  if (fxLayer)   fxLayer.innerHTML   = '';
+  if (locLabel)  locLabel.textContent = '';
+  if (flow)      flow.innerHTML = '';
+  if (actions)   actions.innerHTML = '';
 
   updateAdventureProgress(lesson, 0);
   renderAdventureSceneByIndex(0, lesson);
@@ -1662,7 +1736,6 @@ function updateAdventureProgress(lesson, idx) {
 }
 
 function sceneIndexFor(scene, lesson) {
-  // Resolve a scene explicitly, or by id, or by array order.
   if (scene == null) return -1;
   if (typeof scene === 'number') return scene;
   if (typeof scene === 'string') return lesson.scenes.findIndex(s => s.id === scene);
@@ -1684,14 +1757,8 @@ function renderAdventureSceneByIndex(idx, lesson) {
 
   if (scene.location) showLocation(scene.location);
 
-  const beats = (scene.beats || []).map(normalizeBeat).filter(Boolean);
-  if (!beats.length) {
-    // No beats — continue via scene.next, else advance.
-    advanceScene(scene, lesson);
-    return;
-  }
-
-  StoryCtrl.start(beats, () => advanceScene(scene, lesson));
+  renderCompactCast(scene, lesson);
+  renderSceneStoryChronicle(scene, lesson, idx);
 }
 
 function advanceScene(scene, lesson) {
@@ -1707,146 +1774,232 @@ function advanceScene(scene, lesson) {
   }
 }
 
-function renderStream(b) {
-  const log = document.getElementById('streamLog');
-  if (!log) return;
-  const chip = document.createElement('div');
-  chip.className = 'stream-chip';
-  if (b.t === 'dialogue' || b.t === 'reaction') {
-    const who = b.speaker || (b.by) || '';
-    chip.innerHTML = who
-      ? `<span class="stream-speaker">${escapeHtml(who)}</span> ${escapeHtml(b.text)}`
-      : escapeHtml(b.text);
-  } else if (b.t === 'action') {
-    chip.innerHTML = `<span class="stream-action">${escapeHtml(b.by || 'Someone')} ${escapeHtml(b.text)}</span>`;
-  } else if (b.t === 'focus') {
-    chip.classList.add('stream-focus');
-    chip.textContent = b.text;
-  } else if (b.t === 'discovery') {
-    chip.classList.add('stream-discovery');
-    chip.textContent = '🔍 ' + b.text;
-  } else {
-    chip.textContent = b.text;
-  }
-  log.appendChild(chip);
-  while (log.children.length > 3) log.removeChild(log.firstChild);
-  log.scrollTop = log.scrollHeight;
-}
-
-function setStageCast(b) {
-  const disp = document.getElementById('charactersDisplay');
-  if (!disp) return;
-  const lesson = AppState.currentSession._lesson;
-  const uni = AppState.currentUniverse || 'harrypotter';
-  const NPCs = (UNIVERSE_NPCS[uni] || []).slice(0, 3);
-
-  const mentioned = new Set();
-  const namesToFind = (b.speaker || b.by || '').toLowerCase();
-  if (namesToFind) {
-    const words = namesToFind.split(/\s+/);
-    NPCs.forEach(n => {
-      const full = n.name.toLowerCase();
-      if (words.some(w => full.includes(w))) mentioned.add(n.name);
-    });
-  }
-  if (b.speaker && b.speaker.toLowerCase() === 'you') mentioned.add('__learner__');
-  if (b.by && b.by.toLowerCase() === 'you') mentioned.add('__learner__');
-
-  const shouldShow = mentioned.size > 0;
-
-  // Learner character
-  let learner = disp.querySelector('.sprite-learner');
-  if (!learner) {
-    learner = document.createElement('div');
-    learner.className = 'character-sprite sprite-learner';
-    const ch = AppState.character || {};
-    const appKey = (ch.appearance?.avatar || ch.appearance?.bodyType || 'robed').toLowerCase();
-    const tint = APPEARANCE_TINTS[appKey] ? appKey : '/default';
-    const wk = (ch.weapon || '').toLowerCase();
-    const prop = WEAPON_PROPS[wk] !== undefined ? wk : 'none';
-    learner.innerHTML = svgFigure({
-      name: ch.name || 'You',
-      tint, hair: tint.trim, skin: tint.skin, trim: tint.trim, prop,
-      speaking: false, acting: false,
-    }) + `<div class="sprite-name">${escapeHtml(ch.name || 'You')}</div>`;
-    disp.appendChild(learner);
-  }
-  if (shouldShow) {
-    const isSpeaking = (b.speaker || '').toLowerCase() === 'you' || (b.by || '').toLowerCase() === 'you';
-    const isActing   = b.t === 'action' && (b.by || '').toLowerCase() === 'you';
-    learner.classList.toggle('is-speaking', isSpeaking);
-    learner.classList.toggle('is-acting', isActing);
-  }
-
-  // NPC cast
-  NPCs.forEach(npc => {
-    let el = disp.querySelector(`.sprite-npc[data-name="${npc.name}"]`);
-    if (!el) {
-      el = document.createElement('div');
-      el.className = 'character-sprite sprite-npc';
-      el.dataset.name = npc.name;
-      el.innerHTML = svgFigure({
-        name: npc.name, hair: npc.hair, skin: npc.skin, trim: npc.trim, prop: npc.prop,
-        speaking: false, acting: false,
-      }) + `<div class="sprite-name">${escapeHtml(npc.name)}</div>`;
-      disp.appendChild(el);
-    }
-    if (shouldShow) {
-      const lc = (b.speaker || '').toLowerCase();
-      const isSpeaking = npc.name.toLowerCase().includes(lc) && lc.length > 1;
-      const isActing = isSpeaking && b.t === 'action';
-      el.classList.toggle('is-speaking', isSpeaking);
-      el.classList.toggle('is-acting', isActing);
-    }
-  });
-
-  // Highlight active
-  disp.querySelectorAll('.character-sprite').forEach(el => {
-    if (!shouldShow) { el.classList.remove('is-speaking', 'is-acting'); return; }
-    const isActive = el.classList.contains('is-speaking') || el.classList.contains('is-acting');
-    el.style.opacity = isActive ? '1' : '0.65';
-    el.style.filter  = isActive ? 'none' : 'brightness(0.7)';
-  });
-}
-
-function renderEffect(fx, label) {
-  const layer = document.getElementById('actionMomentsArea');
-  if (!layer) return;
-  const el = document.createElement('div');
-  el.className = 'effect ' + (FX_CLASS[fx] || '');
-  el.innerHTML = `<span class="effect-glyph">${FX_GLYPHS[fx] || ''}</span>`;
-  if (label) el.innerHTML += `<span class="effect-label">${escapeHtml(label)}</span>`;
-  layer.appendChild(el);
-  setTimeout(() => { if (el.parentNode) el.remove(); }, 2400);
-}
-
 function showLocation(text) {
   const el = document.getElementById('sceneLocationLabel');
-  if (el) el.textContent = text;
+  if (el) el.textContent = text ? `📍 ${text}` : '';
 }
 
-function renderChoice(b) {
-  const area = document.getElementById('userInteractionArea');
-  const q    = document.getElementById('interactionQuestionText');
-  const opts = document.getElementById('interactionOptions');
-  if (!area || !opts) return;
+function renderCompactCast(scene, lesson) {
+  const disp = document.getElementById('charactersDisplay');
+  if (!disp) return;
+  disp.innerHTML = '';
 
-  area.classList.remove('hidden-element');
-  q.textContent = b.text || 'What do you do?';
-  opts.innerHTML = '';
+  const uni = AppState.currentUniverse || 'harrypotter';
+  const NPCs = (UNIVERSE_NPCS[uni] || []).slice(0, 4);
 
-  (b.options || []).forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'interaction-option-btn';
-    btn.textContent = opt.text;
-    btn.addEventListener('click', () => handleChoice(opt));
-    opts.appendChild(btn);
+  // Discover speakers/actors in this scene
+  const activeNames = new Set();
+  const rawBeats = (scene?.beats || []).map(normalizeBeat).flat().filter(Boolean);
+  rawBeats.forEach(b => {
+    if (b.speaker) activeNames.add(b.speaker.toLowerCase());
+    if (b.by) activeNames.add(b.by.toLowerCase());
+  });
+
+  const ch = AppState.character || {};
+  const appKey = (ch.appearance?.avatar || ch.appearance?.id || ch.appearance?.type || 'robed').toLowerCase();
+  const tintObj = APPEARANCE_TINTS[appKey] || APPEARANCE_TINTS['robed'] || APPEARANCE_TINTS['default'];
+  const wk = (ch.weapon || '').toLowerCase();
+  const prop = WEAPON_PROPS[wk] !== undefined ? wk : 'none';
+  const learnerActive = activeNames.has('you') || activeNames.has((ch.name || '').toLowerCase()) || activeNames.size === 0;
+
+  // Learner mini sprite
+  const learner = document.createElement('div');
+  learner.className = `character-sprite sprite-learner${learnerActive ? ' is-speaking' : ''}`;
+  learner.innerHTML = svgFigure({
+    name: ch.name || 'You',
+    tint: appKey,
+    hair: tintObj.hair,
+    skin: tintObj.skin,
+    trim: tintObj.trim,
+    prop,
+    speaking: learnerActive,
+    acting: false,
+  }) + `<div class="sprite-name">${escapeHtml(ch.name || 'You')}</div>`;
+  disp.appendChild(learner);
+
+  // NPC mini sprites
+  NPCs.forEach(npc => {
+    const isPresent = activeNames.size === 0 || Array.from(activeNames).some(name => npc.name.toLowerCase().includes(name) || name.includes(npc.name.toLowerCase()));
+    const el = document.createElement('div');
+    el.className = `character-sprite sprite-npc${isPresent ? ' is-speaking' : ''}`;
+    el.dataset.name = npc.name;
+    el.innerHTML = svgFigure({
+      name: npc.name, hair: npc.hair, skin: npc.skin, trim: npc.trim, prop: npc.prop,
+      speaking: isPresent, acting: false,
+    }) + `<div class="sprite-name">${escapeHtml(npc.name)}</div>`;
+    disp.appendChild(el);
   });
 }
 
-function handleChoice(opt) {
-  const opts = document.getElementById('interactionOptions');
-  if (opts) opts.querySelectorAll('.interaction-option-btn').forEach(b => { b.disabled = true; });
+function renderSceneStoryChronicle(scene, lesson, idx) {
+  const beatsFlow = document.getElementById('storyBeatsFlow');
+  const actionArea = document.getElementById('storyActionArea');
+  const chroniclePanel = document.getElementById('storyChroniclePanel');
+  if (!beatsFlow || !actionArea) return;
+
+  beatsFlow.innerHTML = '';
+  actionArea.innerHTML = '';
+
+  const rawBeats = (scene.beats || []).map(normalizeBeat).flat().filter(Boolean);
+
+  const storyBeats = [];
+  let choiceBeat = null;
+
+  for (const b of rawBeats) {
+    if ((b.t === 'choice' || b.options) && !choiceBeat) {
+      choiceBeat = b;
+    } else {
+      storyBeats.push(b);
+    }
+  }
+
+  if (!choiceBeat && scene.choice) {
+    choiceBeat = {
+      t: 'choice',
+      text: scene.choice.question || scene.choice.text || 'What do you do?',
+      options: scene.choice.options || []
+    };
+  }
+
+  const uni = AppState.currentUniverse || 'harrypotter';
+  const npcs = UNIVERSE_NPCS[uni] || [];
+  const learnerName = AppState.character?.name || 'You';
+  const learnerAvatar = AppState.character?.appearance?.avatar || '🦸';
+
+  // Render all narrative and dialogue beats at once
+  storyBeats.forEach(b => {
+    const who = (b.speaker || b.by || '').trim();
+    const isLearner = who.toLowerCase() === 'you' || who.toLowerCase() === learnerName.toLowerCase();
+    const isSpoken = (b.t === 'dialogue' || b.t === 'reaction' || !!b.speaker) && b.t !== 'action';
+
+    if (isSpoken) {
+      let role = b.role || '';
+      const lwho = who.toLowerCase();
+
+      if (isLearner) {
+        role = 'learner';
+      } else if (!role) {
+        if (lwho.includes('malfoy') || lwho.includes('loki') || lwho.includes('asura') || lwho.includes('flint') || lwho.includes('rival') || lwho.includes('snape')) {
+          role = 'rival';
+        } else if (lwho.includes('ron') || lwho.includes('spider') || lwho.includes('peter') || lwho.includes('bolt') || lwho.includes('boomer') || lwho.includes('riku') || lwho.includes('narada')) {
+          role = 'comic';
+        } else {
+          role = 'ally';
+        }
+      }
+
+      let avatar = '✨';
+      let name = who || 'Narrator';
+      let roleBadgeHtml = '';
+
+      if (isLearner) {
+        avatar = learnerAvatar;
+        name = learnerName;
+        roleBadgeHtml = '<span class="beat-role-badge beat-role-badge--player">⭐ Hero</span>';
+      } else {
+        const npc = npcs.find(n => n.name.toLowerCase() === lwho || n.name.toLowerCase().includes(lwho) || lwho.includes(n.name.toLowerCase()));
+        avatar = npc?.emoji || (who ? who.charAt(0).toUpperCase() : '✨');
+        if (npc) name = npc.name;
+
+        if (role === 'rival') {
+          roleBadgeHtml = '<span class="beat-role-badge beat-role-badge--rival">⚔️ Rival</span>';
+        } else if (role === 'comic') {
+          roleBadgeHtml = '<span class="beat-role-badge beat-role-badge--comic">😄 Jester</span>';
+        } else {
+          roleBadgeHtml = '<span class="beat-role-badge beat-role-badge--ally">🛡️ Ally</span>';
+        }
+      }
+
+      const moodHtml = b.mood || b.tone ? `<span class="beat-mood-tag">${escapeHtml(b.mood || b.tone)}</span>` : '';
+
+      const beatEl = document.createElement('div');
+      beatEl.className = `story-beat story-beat--dialogue story-beat--${role}`;
+      beatEl.innerHTML = `
+        <div class="beat-header-row">
+          <span class="beat-speaker-avatar">${avatar}</span>
+          <span class="beat-speaker-name">${escapeHtml(name)}</span>
+          ${roleBadgeHtml}
+          ${moodHtml}
+        </div>
+        <div class="beat-dialogue-content">${escapeHtml(b.text || '')}</div>
+      `;
+      beatsFlow.appendChild(beatEl);
+
+    } else if (b.t === 'action') {
+      const beatEl = document.createElement('div');
+      beatEl.className = 'story-beat story-beat--action';
+      const actorName = isLearner ? learnerName : (who || 'You');
+      beatEl.innerHTML = `
+        <div class="beat-action-icon">⚡</div>
+        <div class="beat-action-body">
+          <span class="beat-action-actor">${escapeHtml(actorName)}</span>: ${escapeHtml(b.text || b.what || '')}
+        </div>
+      `;
+      beatsFlow.appendChild(beatEl);
+
+    } else if (b.t === 'discovery') {
+      const beatEl = document.createElement('div');
+      beatEl.className = 'story-beat story-beat--discovery';
+      beatEl.innerHTML = `
+        <div class="beat-action-icon">💡</div>
+        <div class="beat-action-body">
+          <div class="beat-action-actor">Key Concept Discovery</div>
+          <div>${escapeHtml(b.text || '')}</div>
+        </div>
+      `;
+      beatsFlow.appendChild(beatEl);
+
+    } else {
+      const beatEl = document.createElement('div');
+      beatEl.className = 'story-beat story-beat--narration';
+      const icon = b.t === 'env' ? '🌍' : '📜';
+      beatEl.innerHTML = `
+        <div class="beat-narration-icon">${icon}</div>
+        <div class="beat-narration-text">${escapeHtml(b.text || '')}</div>
+      `;
+      beatsFlow.appendChild(beatEl);
+    }
+  });
+
+  // Render choice or continue button at the end
+  if (choiceBeat && Array.isArray(choiceBeat.options) && choiceBeat.options.length > 0) {
+    renderChronicleChoice(choiceBeat, scene, lesson);
+  } else {
+    renderChronicleContinue(scene, lesson, idx);
+  }
+
+  // Scroll to top of chronicle panel so story is read from top
+  if (chroniclePanel) {
+    chroniclePanel.scrollTop = 0;
+  }
+}
+
+function renderChronicleChoice(choiceBeat, scene, lesson) {
+  const actionArea = document.getElementById('storyActionArea');
+  if (!actionArea) return;
+
+  const card = document.createElement('div');
+  card.className = 'story-decision-card';
+  card.innerHTML = `
+    <div class="decision-badge">Your Decision / Next Move</div>
+    <div class="decision-question">${escapeHtml(choiceBeat.text || 'What do you choose to do next?')}</div>
+    <div class="decision-options" id="chronicleDecisionOptions"></div>
+  `;
+  actionArea.appendChild(card);
+
+  const optsContainer = card.querySelector('#chronicleDecisionOptions');
+  choiceBeat.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'decision-option-btn';
+    btn.innerHTML = `<span class="decision-opt-bullet">▶</span> <span>${escapeHtml(opt.text)}</span>`;
+    btn.addEventListener('click', () => handleChronicleChoice(opt, card, scene, lesson));
+    optsContainer.appendChild(btn);
+  });
+}
+
+function handleChronicleChoice(opt, card, scene, lesson) {
+  const btns = card.querySelectorAll('.decision-option-btn');
+  btns.forEach(b => { b.disabled = true; });
 
   const xp = opt.isCorrect ? 100 : 25;
   AppState.addPoints(xp);
@@ -1855,48 +2008,356 @@ function handleChoice(opt) {
   const ap = document.getElementById('adventurePoints');
   if (ap) ap.textContent = AppState.userProgress.points;
 
-  const area = document.getElementById('userInteractionArea');
-  if (opt.feedback && area) {
+  if (opt.feedback) {
     const fb = document.createElement('div');
-    fb.className = 'choice-feedback';
-    fb.innerHTML = `<p class="choice-feedback-text">${escapeHtml(opt.feedback)}</p>
-      <button class="interaction-option-btn continue-btn" id="choiceContinueBtn">Continue →</button>`;
-    const q = document.getElementById('interactionQuestionText');
-    const opts2 = document.getElementById('interactionOptions');
-    if (q) q.textContent = opt.isCorrect ? '✅ Well done!' : '💡 Not quite — but listen…';
-    if (opts2) opts2.innerHTML = '';
-    opts2.appendChild(fb);
-    const cont = document.getElementById('choiceContinueBtn');
-    if (cont) cont.addEventListener('click', () => advanceAfterChoice(opt));
+    fb.className = 'decision-feedback-card';
+    fb.innerHTML = `
+      <div style="font-weight: 700; color: ${opt.isCorrect ? '#4ade80' : 'var(--universe-accent, #ffd700)'}">
+        ${opt.isCorrect ? '✅ Well done!' : '💡 Insight:'}
+      </div>
+      <div style="font-size: 0.95rem; line-height: 1.45;">${escapeHtml(opt.feedback)}</div>
+      <button class="story-continue-btn" id="feedbackContinueBtn" style="margin-top: 0.5rem;">Continue Journey →</button>
+    `;
+    card.appendChild(fb);
+
+    fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const contBtn = card.querySelector('#feedbackContinueBtn');
+    if (contBtn) {
+      contBtn.addEventListener('click', () => advanceAfterChoice(opt));
+    }
   } else {
     advanceAfterChoice(opt);
   }
+}
+
+function renderChronicleContinue(scene, lesson, idx) {
+  const actionArea = document.getElementById('storyActionArea');
+  if (!actionArea) return;
+
+  const isLast = (idx + 1 >= lesson.scenes.length) && (!scene.next || sceneIndexFor(scene.next, lesson) < 0);
+  const btn = document.createElement('button');
+  btn.className = `story-continue-btn${isLast ? ' story-continue-btn--final' : ''}`;
+  btn.id = 'chronicleContinueBtn';
+  btn.textContent = isLast ? 'Complete Mission & Unlock Concept ⭐ →' : 'Continue to Next Scene →';
+  btn.addEventListener('click', () => {
+    btn.disabled = true;
+    advanceScene(scene, lesson);
+  });
+  actionArea.appendChild(btn);
 }
 
 function advanceAfterChoice(opt) {
   const scene  = AppState.currentSession._lesson?.scenes[AppState.currentSession._sceneIdx];
   const sceneMap = AppState.currentSession._sceneMap;
   const lesson = AppState.currentSession._lesson;
-  const area = document.getElementById('userInteractionArea');
-  if (area) area.classList.add('hidden-element');
-  StoryCtrl._atChoice = false;
 
-  if (opt.next && sceneMap[opt.next]) {
+  if (opt && opt.next && sceneMap && sceneMap[opt.next]) {
     const nextIdx = lesson.scenes.findIndex(s => s.id === opt.next);
     if (nextIdx >= 0) {
       renderAdventureSceneByIndex(nextIdx, lesson);
       return;
     }
   }
-  // Option carries no usable next — fall back to the scene's own "next".
   advanceScene(scene, lesson);
 }
 
+/* =========================================================
+   Badges System & Milestone Tracking (Per Universe)
+   ========================================================= */
+
+const UNIVERSE_BADGES = {
+  harrypotter: [
+    {
+      id: 'hp_merlin',
+      title: 'Order of Merlin',
+      icon: '⚡',
+      description: 'Completed a magical mission at Hogwarts.'
+    },
+    {
+      id: 'hp_spellcaster',
+      title: 'Master Wandlore',
+      icon: '🪄',
+      description: 'Applied spells and wandwork to resolve magical anomalies.'
+    },
+    {
+      id: 'hp_scholar',
+      title: 'Hogwarts Prefect',
+      icon: '📜',
+      description: 'Mastered 2 or more magical academic concepts.'
+    },
+    {
+      id: 'hp_champion',
+      title: 'Triwizard Champion',
+      icon: '🏆',
+      description: 'Earned 300+ Harry Potter knowledge points.'
+    }
+  ],
+  marvel: [
+    {
+      id: 'marvel_avenger',
+      title: 'Avenger Recruited',
+      icon: '🛡️',
+      description: 'Proved heroic prowess alongside Earth’s Mightiest Heroes.'
+    },
+    {
+      id: 'marvel_tactician',
+      title: 'Quantum Strategist',
+      icon: '⚛️',
+      description: 'Applied physics & technology to resolve high-tech crises.'
+    },
+    {
+      id: 'marvel_scholar',
+      title: 'Stark Innovator',
+      icon: '🧠',
+      description: 'Mastered 2 or more scientific principles in Marvel.'
+    },
+    {
+      id: 'marvel_champion',
+      title: 'Infinity Sovereign',
+      icon: '👑',
+      description: 'Earned 300+ Marvel knowledge points.'
+    }
+  ],
+  space: [
+    {
+      id: 'space_pioneer',
+      title: 'Starfleet Pioneer',
+      icon: '🚀',
+      description: 'Braved the stellar unknown and charted uncharted systems.'
+    },
+    {
+      id: 'space_navigator',
+      title: 'Astro Navigator',
+      icon: '🔭',
+      description: 'Decoded planetary mechanics and cosmic gravitational anomalies.'
+    },
+    {
+      id: 'space_scholar',
+      title: 'Galactic Scholar',
+      icon: '🌌',
+      description: 'Mastered 2 or more deep space astrophysics concepts.'
+    },
+    {
+      id: 'space_champion',
+      title: 'Cosmic Admiral',
+      icon: '👑',
+      description: 'Earned 300+ Deep Space knowledge points.'
+    }
+  ],
+  anime: [
+    {
+      id: 'anime_champion',
+      title: 'Guild Champion',
+      icon: '⚔️',
+      description: 'Awakened inner resolve and triumphed in the tournament arena.'
+    },
+    {
+      id: 'anime_spirit',
+      title: 'Ki Resonator',
+      icon: '🔥',
+      description: 'Channeled elemental energy to overcome rival challenges.'
+    },
+    {
+      id: 'anime_scholar',
+      title: 'Jutsu Master',
+      icon: '📖',
+      description: 'Mastered 2 or more battle-tested academic concepts.'
+    },
+    {
+      id: 'anime_legend',
+      title: 'Apex Warrior',
+      icon: '👑',
+      description: 'Earned 300+ Anime knowledge points.'
+    }
+  ],
+  mythology: [
+    {
+      id: 'myth_sage',
+      title: 'Cosmic Sage',
+      icon: '🔱',
+      description: 'Unlocked ancient wisdom and divine astral mysteries.'
+    },
+    {
+      id: 'myth_wielder',
+      title: 'Astra Wielder',
+      icon: '⚡',
+      description: 'Harnessed sacred mantras to restore universal balance.'
+    },
+    {
+      id: 'myth_scholar',
+      title: 'Vedic Scholar',
+      icon: '🪷',
+      description: 'Mastered 2 or more timeless cosmological truths.'
+    },
+    {
+      id: 'myth_champion',
+      title: 'Deva Sovereign',
+      icon: '👑',
+      description: 'Earned 300+ Mythology knowledge points.'
+    }
+  ],
+  pirates: [
+    {
+      id: 'pirates_legend',
+      title: 'Seven Seas Legend',
+      icon: '🏴‍☠️',
+      description: 'Conquered nautical perils and claimed golden truths.'
+    },
+    {
+      id: 'pirates_navigator',
+      title: 'Master Navigator',
+      icon: '🧭',
+      description: 'Deciphered maritime charts, tidal forces, and sea currents.'
+    },
+    {
+      id: 'pirates_scholar',
+      title: 'Cartographer King',
+      icon: '🗺️',
+      description: 'Mastered 2 or more oceanic science concepts.'
+    },
+    {
+      id: 'pirates_champion',
+      title: 'Pirate Sovereign',
+      icon: '👑',
+      description: 'Earned 300+ Pirates knowledge points.'
+    }
+  ]
+};
+
+// Flattened badge list helper for looking up badge objects by id
+function getBadgeDefinition(id, universeKey) {
+  const u = universeKey || AppState.currentUniverse;
+  if (u && UNIVERSE_BADGES[u]) {
+    const found = UNIVERSE_BADGES[u].find(b => b.id === id);
+    if (found) return found;
+  }
+  for (const list of Object.values(UNIVERSE_BADGES)) {
+    const found = list.find(b => b.id === id);
+    if (found) return found;
+  }
+  return { id, title: id, icon: '🏆', description: 'Multiverse achievement' };
+}
+
+function evaluateBadges(lesson, universeKey) {
+  const currentU = universeKey || AppState.currentUniverse || 'harrypotter';
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(currentU)
+    : AppState.userProgress;
+  const currentBadges = uProg.badges || [];
+  const hasBadge = (id) => currentBadges.some(b => (typeof b === 'string' ? b === id : b.id === id));
+  const roster = UNIVERSE_BADGES[currentU] || [];
+  const newBadges = [];
+
+  // Check 1: First adventure in this universe
+  if (uProg.adventureHistory.length >= 1 && roster[0] && !hasBadge(roster[0].id)) {
+    newBadges.push(roster[0]);
+  }
+
+  // Check 2: Tactical decision / spellcraft applied in this adventure
+  if (roster[1] && !hasBadge(roster[1].id)) {
+    newBadges.push(roster[1]);
+  }
+
+  // Check 3: Learned 2 or more concepts in this universe
+  if (uProg.learnedConcepts.length >= 2 && roster[2] && !hasBadge(roster[2].id)) {
+    newBadges.push(roster[2]);
+  }
+
+  // Check 4: Points milestone in this universe (>= 300 points)
+  if (uProg.points >= 300 && roster[3] && !hasBadge(roster[3].id)) {
+    newBadges.push(roster[3]);
+  }
+
+  newBadges.forEach(badge => {
+    if (!badge) return;
+    if (typeof AppState.addBadge === 'function') {
+      AppState.addBadge(badge, currentU);
+    } else {
+      uProg.badges.push(badge);
+    }
+    const uName = AppState.universeThemes[currentU]?.name || currentU;
+    showToast(`🏆 ${uName} Badge Unlocked: ${badge.title}!`);
+  });
+}
+
 function finishAdventure(lesson) {
-  StoryCtrl.stop();
-  if (lesson.discovery?.title) AppState.addLearnedConcept(lesson.discovery.title);
+  const currentU = AppState.currentUniverse || 'harrypotter';
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(currentU)
+    : AppState.userProgress;
+
+  // 1. Record completed adventure in this universe's history
+  const missionTitle = lesson.mission?.title || 'Adventure Mission';
+  const conceptTitle = lesson.discovery?.title || '';
+  uProg.adventureHistory.push({
+    title: missionTitle,
+    concept: conceptTitle,
+    universe: currentU,
+    completedAt: new Date().toISOString()
+  });
+
+  // 2. Add learned concept strictly to this universe
+  if (conceptTitle) {
+    if (typeof AppState.addLearnedConcept === 'function') {
+      AppState.addLearnedConcept(conceptTitle, currentU);
+    } else {
+      if (!uProg.learnedConcepts.includes(conceptTitle)) {
+        uProg.learnedConcepts.push(conceptTitle);
+      }
+    }
+  }
+
+  // 3. Evaluate and award universe-specific badges
+  evaluateBadges(lesson, currentU);
+
+  // 4. Save progress into CharacterStore so adventures count, points, and badges persist for this universe
+  if (typeof AppState.saveUniverseProgress === 'function') {
+    AppState.saveUniverseProgress();
+  }
+  if (typeof CharacterStore !== 'undefined' && AppState.character?.name) {
+    CharacterStore.save(AppState.character, uProg);
+  }
+
   AppState.currentSession.conceptData = lesson;
-  AppState.navigateTo(AppState.NAVIGATION_STATES.CONCEPT_UNLOCKED);
+
+  const ending = lesson.ending || {};
+  const endText = [ending.text, ending.funnyLine].filter(Boolean).join(' ');
+
+  const flow = document.getElementById('storyBeatsFlow');
+  const actArea = document.getElementById('storyActionArea');
+
+  if (endText && flow && actArea) {
+    const beatEl = document.createElement('div');
+    beatEl.className = 'story-beat story-beat--discovery';
+    beatEl.innerHTML = `
+      <div class="beat-action-icon">🏆</div>
+      <div class="beat-action-body">
+        <div class="beat-action-actor" style="color: #ffd700; font-size: 1.1rem; margin-bottom: 0.35rem;">
+          Mission Complete!
+        </div>
+        <div style="font-size: 1rem; line-height: 1.5;">${escapeHtml(endText)}</div>
+      </div>
+    `;
+    flow.appendChild(beatEl);
+
+    actArea.innerHTML = `
+      <button class="story-continue-btn story-continue-btn--final" id="finishMissionBtn">
+        Unlock Concept & View Rewards ⭐ →
+      </button>
+    `;
+    const btn = document.getElementById('finishMissionBtn');
+    if (btn) {
+      btn.onclick = () => {
+        AppState.navigateTo(AppState.NAVIGATION_STATES.CONCEPT_UNLOCKED);
+      };
+    }
+
+    const panel = document.getElementById('storyChroniclePanel');
+    if (panel) panel.scrollTop = panel.scrollHeight;
+  } else {
+    AppState.navigateTo(AppState.NAVIGATION_STATES.CONCEPT_UNLOCKED);
+  }
 }
 
 
@@ -1994,6 +2455,7 @@ function initializeConceptUnlocked() {
   const nextAdventureBtn  = document.getElementById('nextAdventureBtn');
   const learnInDetailBtn  = document.getElementById('learnInDetailBtn');
   const conceptBackUniverseBtn = document.getElementById('conceptBackUniverseBtn');
+  const conceptViewHubBtn = document.getElementById('conceptViewHubBtn');
 
   if (nextAdventureBtn) {
     nextAdventureBtn.addEventListener('click', () => {
@@ -2009,6 +2471,12 @@ function initializeConceptUnlocked() {
     });
   }
 
+  if (conceptViewHubBtn) {
+    conceptViewHubBtn.addEventListener('click', () => {
+      AppState.navigateTo(AppState.NAVIGATION_STATES.HUB);
+    });
+  }
+
   if (conceptBackUniverseBtn) {
     conceptBackUniverseBtn.addEventListener('click', () => {
       AppState.navigateTo(AppState.NAVIGATION_STATES.UNIVERSE_SELECTION);
@@ -2018,10 +2486,28 @@ function initializeConceptUnlocked() {
 
 function populateConceptUnlocked(lesson) {
   if (!lesson) return;
+  const currentU = AppState.currentUniverse || 'harrypotter';
+  const uName = AppState.universeThemes[currentU]?.name || 'Universe';
+
+  // Award knowledge points strictly to this universe
+  AppState.addPoints(100, currentU);
+  evaluateBadges(lesson, currentU);
+
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(currentU)
+    : AppState.userProgress;
+  if (typeof AppState.saveUniverseProgress === 'function') {
+    AppState.saveUniverseProgress();
+  }
+  if (typeof CharacterStore !== 'undefined' && AppState.character?.name) {
+    CharacterStore.save(AppState.character, uProg);
+  }
+
   const d = lesson.discovery || {};
   const title = document.getElementById('conceptTitle');
   const short = document.getElementById('conceptShortExplanation');
   const conn  = document.getElementById('adventureConnectionText');
+  const rewardPoints = document.getElementById('rewardPoints');
   if (title) title.textContent = d.title || 'Key Concept';
   if (short) short.textContent = d.text || '';
   if (conn) {
@@ -2030,6 +2516,8 @@ function populateConceptUnlocked(lesson) {
       ? `This concept resolved: ${mission.context}`
       : (d.text ? `You used this knowledge during the adventure.` : '');
   }
+  // Update reward badge display
+  if (rewardPoints) rewardPoints.textContent = `+100 ${uName} Points`;
 }
 
 /* =========================================================
@@ -2064,6 +2552,7 @@ function renderLearnInDetail(lesson) {
   const rwDiv    = document.getElementById('realWorldExamples');
   const pqDiv    = document.getElementById('practiceQuestions');
   const quizDiv  = document.getElementById('miniQuiz');
+  const takeawayDiv = document.getElementById('conceptTakeawayCard');
 
   if (subtitle) subtitle.textContent = disc.title || 'Concept';
 
@@ -2102,11 +2591,57 @@ function renderLearnInDetail(lesson) {
       });
     });
   }
+
+  // Populate takeaway card with explanation bullets if present
+  if (takeawayDiv && det.explanation) {
+    takeawayDiv.innerHTML = det.explanation.map(p => `<div class="takeaway-bullet"><span class="takeaway-icon">✅</span>${escapeHtml(p)}</div>`).join('');
+  }
 }
 
 /* =========================================================
-   Hub Screen
+   Hub Screen (Universe-Specific Tracking & Switcher)
    ========================================================= */
+
+let currentHubUniverse = null;
+
+function renderHubUniverseTabs() {
+  const tabsContainer = document.getElementById('hubUniverseTabs');
+  if (!tabsContainer) return;
+
+  const universes = [
+    { key: 'harrypotter', name: 'Harry Potter', icon: '🧙‍♂️' },
+    { key: 'marvel', name: 'Marvel', icon: '⚡' },
+    { key: 'space', name: 'Deep Space', icon: '🚀' },
+    { key: 'anime', name: 'Anime', icon: '⚔️' },
+    { key: 'mythology', name: 'Mythology', icon: '🏛️' },
+    { key: 'pirates', name: 'Pirates', icon: '🏴‍☠️' }
+  ];
+
+  const active = currentHubUniverse || AppState.currentUniverse || 'harrypotter';
+
+  tabsContainer.innerHTML = universes.map(u => {
+    const prog = typeof AppState.getUniverseProgress === 'function'
+      ? AppState.getUniverseProgress(u.key)
+      : { points: 0 };
+    const pts = prog.points || 0;
+    const isAct = u.key === active;
+    return `
+      <button class="hub-universe-tab${isAct ? ' active' : ''}" data-universe="${u.key}">
+        <span>${u.icon} ${u.name}</span>
+        ${pts > 0 ? `<span class="tab-mini-pts">${pts} pts</span>` : ''}
+      </button>
+    `;
+  }).join('');
+
+  tabsContainer.querySelectorAll('.hub-universe-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const uKey = btn.dataset.universe;
+      currentHubUniverse = uKey;
+      renderHubUniverseTabs();
+      updateHubDisplay(uKey);
+    });
+  });
+}
 
 function initializeHub() {
   const hubNewMissionBtn = document.getElementById('hubNewMissionBtn');
@@ -2115,12 +2650,16 @@ function initializeHub() {
   const switchCharacterBtn = document.getElementById('switchCharacterBtn');
   const createNewCharacterBtn = document.getElementById('createNewCharacterBtn');
   
-  // Update hub display
-  updateHubDisplay();
+  currentHubUniverse = AppState.currentUniverse || 'harrypotter';
+  renderHubUniverseTabs();
+  updateHubDisplay(currentHubUniverse);
   
   // New mission button
   if (hubNewMissionBtn) {
     hubNewMissionBtn.addEventListener('click', () => {
+      if (currentHubUniverse && currentHubUniverse !== AppState.currentUniverse) {
+        AppState.setUniverse(currentHubUniverse);
+      }
       AppState.navigateTo(AppState.NAVIGATION_STATES.MISSION_SELECTION);
     });
   }
@@ -2135,7 +2674,6 @@ function initializeHub() {
   // Continue adventure button
   if (hubContinueAdventureBtn) {
     hubContinueAdventureBtn.addEventListener('click', () => {
-      // Would continue existing adventure
       AppState.navigateTo(AppState.NAVIGATION_STATES.CINEMATIC_ADVENTURE);
     });
   }
@@ -2156,47 +2694,125 @@ function initializeHub() {
   }
 }
 
-function updateHubDisplay() {
+function updateHubDisplay(selectedUniverse) {
+  const viewingUniverse = selectedUniverse || currentHubUniverse || AppState.currentUniverse || 'harrypotter';
+  currentHubUniverse = viewingUniverse;
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(viewingUniverse)
+    : AppState.userProgress;
+  const uTheme = AppState.universeThemes[viewingUniverse];
+  const uName = uTheme?.name || viewingUniverse;
+
   const hubCharacterAvatar = document.getElementById('hubCharacterAvatar');
   const hubCharacterName = document.getElementById('hubCharacterName');
   const hubCharacterUniverse = document.getElementById('hubCharacterUniverse');
   const hubPoints = document.getElementById('hubPoints');
   const hubLargePoints = document.getElementById('hubLargePoints');
   const hubAdventures = document.getElementById('hubAdventures');
+  const hubProgressTitle = document.getElementById('hubProgressTitle');
+  const hubPointsUniverseLabel = document.getElementById('hubPointsUniverseLabel');
+  const hubBadgesTitle = document.getElementById('hubBadgesTitle');
+  const hubConceptsTitle = document.getElementById('hubConceptsTitle');
+
+  if (hubCharacterAvatar) {
+    hubCharacterAvatar.textContent = AppState.character?.appearance?.avatar || '👤';
+  }
   
   if (hubCharacterName) {
-    hubCharacterName.textContent = AppState.character.name || 'Hero Name';
+    hubCharacterName.textContent = AppState.character?.name || 'Hero Name';
   }
   
   if (hubCharacterUniverse) {
     hubCharacterUniverse.textContent = AppState.universeThemes[AppState.currentUniverse]?.name || 'Universe';
   }
   
+  // Character profile card points & adventures for character's own universe
+  const charUniverse = AppState.character?.universe || AppState.currentUniverse || 'harrypotter';
+  const charProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(charUniverse)
+    : AppState.userProgress;
+
   if (hubPoints) {
-    hubPoints.textContent = AppState.userProgress.points;
-  }
-  
-  if (hubLargePoints) {
-    hubLargePoints.textContent = AppState.userProgress.points;
+    hubPoints.textContent = charProg.points || 0;
   }
   
   if (hubAdventures) {
-    hubAdventures.textContent = AppState.userProgress.adventureHistory.length;
+    hubAdventures.textContent = charProg.adventureHistory ? charProg.adventureHistory.length : 0;
   }
   
-  // Update learned concepts
-  updateLearnedConceptsList();
+  // Progress card for viewing universe (completely separate!)
+  if (hubProgressTitle) {
+    hubProgressTitle.textContent = `${uName} Progress`;
+  }
+
+  if (hubLargePoints) {
+    hubLargePoints.textContent = uProg.points || 0;
+  }
+
+  if (hubPointsUniverseLabel) {
+    hubPointsUniverseLabel.textContent = `${uName} pts`;
+  }
+
+  if (hubBadgesTitle) {
+    hubBadgesTitle.textContent = `${uName} Badges`;
+  }
+
+  if (hubConceptsTitle) {
+    hubConceptsTitle.textContent = `${uName} Concepts`;
+  }
+  
+  // Update learned concepts and badges for viewing universe
+  updateLearnedConceptsList(viewingUniverse);
+  updateBadgesDisplay(viewingUniverse);
+  renderHubUniverseTabs();
 }
 
-function updateLearnedConceptsList() {
+function updateBadgesDisplay(universeKey) {
+  const grid = document.getElementById('badgesGrid');
+  if (!grid) return;
+
+  const u = universeKey || currentHubUniverse || AppState.currentUniverse || 'harrypotter';
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(u)
+    : AppState.userProgress;
+  const badges = uProg.badges || [];
+  const uTheme = AppState.universeThemes[u];
+  const uName = uTheme?.name || u;
+
+  if (!badges.length) {
+    grid.innerHTML = `<div class="badge-placeholder">🏆 No ${escapeHtml(uName)} badges earned yet — embark on an adventure!</div>`;
+    return;
+  }
+
+  grid.innerHTML = badges.map(badge => {
+    const b = typeof badge === 'string'
+      ? getBadgeDefinition(badge, u)
+      : badge;
+    return `
+      <div class="badge-item glass" title="${escapeHtml(b.description || b.title || '')}">
+        <span class="badge-icon">${b.icon || '🏆'}</span>
+        <span class="badge-name">${escapeHtml(b.title || '')}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateLearnedConceptsList(universeKey) {
   const conceptsList = document.getElementById('conceptsList');
   if (!conceptsList) return;
   
-  if (AppState.userProgress.learnedConcepts.length === 0) {
-    conceptsList.innerHTML = '<div class="concept-placeholder">No concepts learned yet</div>';
+  const u = universeKey || currentHubUniverse || AppState.currentUniverse || 'harrypotter';
+  const uProg = typeof AppState.getUniverseProgress === 'function'
+    ? AppState.getUniverseProgress(u)
+    : AppState.userProgress;
+  const concepts = uProg.learnedConcepts || [];
+  const uName = AppState.universeThemes[u]?.name || u;
+
+  if (concepts.length === 0) {
+    conceptsList.innerHTML = `<div class="concept-placeholder">No concepts learned in ${escapeHtml(uName)} yet</div>`;
   } else {
-    conceptsList.innerHTML = AppState.userProgress.learnedConcepts
-      .map(concept => `<div class="concept-item glass">${concept}</div>`)
+    conceptsList.innerHTML = concepts
+      .map(concept => `<div class="concept-item glass">${escapeHtml(concept)}</div>`)
       .join('');
   }
 }
