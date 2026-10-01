@@ -201,9 +201,9 @@ function initializeUniverseSelection() {
     },
     {
       key: 'mythology',
-      name: 'Mythology',
-      icon: '🏛️',
-      description: 'Ancient stories and timeless truths'
+      name: 'Hindu Mythology',
+      icon: '🕉️',
+      description: 'Sacred epics, celestial astras, and cosmic balance'
     }
   ];
 
@@ -249,7 +249,7 @@ function selectUniverse(universeKey) {
       anime: '⚔️',
       space: '🚀',
       pirates: '🏴‍☠️',
-      mythology: '🏛️'
+      mythology: '🕉️'
     };
     const icon = universeIcons[universeKey] || '🌌';
     creationUniverseBadge.textContent = `${icon} ${universeName} Universe`;
@@ -750,69 +750,75 @@ const UNIVERSE_OPTIONS = {
   },
   mythology: {
     categoryNames: {
-      power: 'Divine Blessing',
-      weapon: 'Mythic Relic',
-      role: 'Mythic Identity',
-      personality: 'Divine Disposition'
+      power: 'Divine Boon (Divya Shakti)',
+      weapon: 'Sacred Astra (Divya Shastra)',
+      role: 'Dharmic Squad Role',
+      personality: 'Dharmic Disposition'
     },
     categoryDescriptions: {
-      power: 'Your god-given domain power',
-      weapon: 'Your divine weapon or artifact',
-      role: 'Your divine status in myth',
-      personality: 'Traits fitting for demigods'
+      power: 'Your celestial blessing granted by the divine',
+      weapon: 'Your consecrated astra or sacred weapon',
+      role: 'Your combat or spiritual function in the squad',
+      personality: 'Virtues governing your actions and Dharma'
     },
     customPlaceholders: {
-      power: 'e.g. Celestial Lightning...',
-      weapon: 'e.g. Aegis Shield...',
-      role: 'e.g. Heroic Demigod...',
-      personality: 'e.g. Wise Beyond Years...'
+      power: 'e.g. Rudra Tandava Radiance, Surya Tejas...',
+      weapon: 'e.g. Gandiva Bow, Sudarshana Chakra, Trishula...',
+      role: 'e.g. Maharathi Archer, Vedic Sage, Kshatriya Guardian...',
+      personality: 'e.g. Unshakable Dharma, Meditative Calm...'
     },
     powers: [
-      'Thunder & Celestial Lightning',
-      'Ocean & Earth Control',
-      'Sunfire & Solar Radiance',
-      'Underworld Shadow Magic'
+      'Rudra Tandava Shakti (Cosmic Equilibrium of Mahadev)',
+      'Sudarshana Chakra & Vision of Preservation',
+      'Surya Tejas & Blazing Solar Radiance',
+      'Vayu Vega & Storm Velocity of Hanuman',
+      'Indra Vajra & Celestial Lightning',
+      'Adi Shakti Kundalini Awakening'
     ],
     weapons: [
-      'Aegis Divine Gorgon Shield',
-      'Celestial Lightning Spear',
-      'Trident of Poseidon',
-      'Mjolnir Thunder Hammer'
+      'Trishula of Lord Shiva 🔱',
+      'Sudarshana Chakra of Lord Vishnu ☸️',
+      'Gandiva Celestial Bow of Arjuna 🏹',
+      'Vajra Gada of Lord Hanuman 🪨',
+      'Brahmashira Supreme Astra ⚡',
+      'Divine Venu Flute of Lord Krishna 🪈'
     ],
     roles: [
-      'Heroic Demigod (Olympus)',
-      'High Oracle of Delphi',
-      'Champion of Asgard',
-      'Mythic Beast Slayer'
+      'Maharathi Archer (Master Celestial Bowman)',
+      'Devout Brahmarishi (Sage of Mantras & Tapasya)',
+      'Dharmic Kshatriya Guardian',
+      'Vanara Sena Warrior (Devoted Champion)',
+      'Celestial Devata Envoy'
     ],
     personalities: [
-      'Regal Divine Bearing',
-      'Wise Beyond Mortal Years',
-      'Fierce in Divine Battle',
-      'Just & Unwavering',
-      'Heroic & Self-Sacrificing'
+      'Unwavering Dharma & Truth (Satya)',
+      'Meditative Calm in Crisis (Samadhi)',
+      'Fearless Righteous Valor (Veera)',
+      'Boundless Bhakti & Devotion',
+      'Deep Cosmic Wisdom & Humility',
+      'Radiant Tapasya & Willpower'
     ],
     appearances: [
-      { id: 'divine-toga', label: 'Gold Divine Toga', icon: '🏛️' },
-      { id: 'armored-cuirass', label: 'Golden Laurel Cuirass', icon: '🛡️' },
-      { id: 'oracle-hood', label: 'Oracle Hooded Robes', icon: '🔮' },
-      { id: 'viking-mail', label: 'Runic Mail & Furs', icon: '⚔️' }
+      { id: 'saffron-dhoti', label: 'Saffron Silk Dhoti & Angavastram', icon: '🧘' },
+      { id: 'kavacha-armor', label: 'Golden Kavacha & Kundala Armor', icon: '🛡️' },
+      { id: 'rudraksha-attire', label: 'Rudraksha Mala & Chandan Tilak', icon: '📿' },
+      { id: 'royal-pagdi', label: 'Royal Kshatriya Robes & Pagdi', icon: '👑' }
     ],
     universeSpecific: [
       {
-        id: 'pantheon',
-        label: 'Pantheon Origin',
-        options: ['Greek Olympians 🏛️', 'Norse Aesir ⚡', 'Egyptian Ennead 📿']
+        id: 'ishtaDevata',
+        label: 'Ishta Devata (Primary Devotion)',
+        options: ['Lord Shiva (Mahadev) 🔱', 'Lord Vishnu (Narayan) 🪷', 'Maa Durga (Adi Shakti) 🌺', 'Sri Rama & Hanuman 🏹']
+      },
+      {
+        id: 'sacredRealm',
+        label: 'Sacred Realm (Loka)',
+        options: ['Mount Kailash 🏔️', 'Vaikuntha Loka 🌌', 'Kurukshetra / Indraprastha ⚔️', 'Ayodhya / Mithila 🏛️']
       },
       {
         id: 'lineage',
-        label: 'Divine Lineage',
-        options: ['Child of Thunder ⚡', 'Child of Sea 🌊', 'Child of Wisdom 🦉']
-      },
-      {
-        id: 'realm',
-        label: 'Sacred Realm',
-        options: ['Mount Olympus 🏛️', 'Asgard Realm ⚡', 'Elysian Fields 🌸']
+        label: 'Vansha / Lineage',
+        options: ['Suryavansha (Solar Dynasty) ☀️', 'Chandravansha (Lunar Dynasty) 🌙', 'Rishi Kula (Sage Gotra) 📿', 'Vanara Sena (Devoted Legion) 🐒']
       }
     ]
   }
@@ -920,7 +926,7 @@ function updateCharacterCreationHeader(universe) {
     anime: 'Create Your Adventurer',
     space: 'Create Your Spacer',
     pirates: 'Create Your Pirate',
-    mythology: 'Create Your Mythic Being'
+    mythology: 'Create Your Dharmic Hero'
   };
   
   const universeSubtitles = {
@@ -929,7 +935,7 @@ function updateCharacterCreationHeader(universe) {
     anime: 'Enter the adventure. Define your anime character destiny.',
     space: 'Journey among the stars. Define your spacefaring identity.',
     pirates: 'Sail the high seas. Define your pirate legend.',
-    mythology: 'Walk among legends. Define your mythic destiny.'
+    mythology: 'Walk among legends of the epics. Fulfill your sacred destiny.'
   };
   
   if (title) title.textContent = universeNames[universe] || 'Create Your Character';
@@ -1494,9 +1500,11 @@ const UNIVERSE_NPCS = {
     { name: 'Navigator Pearl',  hair: '#1a0a00', skin: '#8d6e4a', trim: '#3fd4ff', prop: 'compass' },
   ],
   mythology: [
-    { name: 'Shiva',            hair: '#1a0a2e', skin: '#c8a882', trim: '#7c5cff', prop: 'trident' },
+    { name: 'Shiva',            hair: '#1a0a2e', skin: '#c8a882', trim: '#ff9933', prop: 'trident' },
     { name: 'Vishnu',           hair: '#1a1008', skin: '#f5d0a9', trim: '#ffd700', prop: 'discus' },
-    { name: 'Krishna',          hair: '#1a0a2e', skin: '#3fd4ff', trim: '#ffd700', prop: 'flute' },
+    { name: 'Hanuman',          hair: '#8B4513', skin: '#c8a882', trim: '#ff9933', prop: 'hammer' },
+    { name: 'Arjuna',           hair: '#1a1008', skin: '#f5d0a9', trim: '#ffd700', prop: 'bow' },
+    { name: 'Narada',           hair: '#2c1b00', skin: '#f5d0a9', trim: '#ffb340', prop: 'flute' },
     { name: 'The Asura',        hair: '#cc5500', skin: '#8d6e4a', trim: '#ff4d5e', prop: 'none' },
   ]
 };
@@ -1521,6 +1529,7 @@ const WEAPON_PROPS = {
   scanner:    'M8 10 L20 10 L20 24 L8 24Z M10 14 L18 14 M10 18 L18 18 M10 22 L14 22',
   discus:     'M14 6 A8 8 0 1 1 14 22 A8 8 0 1 1 14 6Z',
   flute:      'M12 4 L16 4 L16 26 L12 26Z M12 8 L16 8 M12 14 L16 14 M12 20 L16 20',
+  bow:        'M12 4 C18 10, 18 22, 12 28 M12 4 L12 28 M8 16 L20 16',
   repulsor:   'M14 10 A4 4 0 1 1 14 18 A4 4 0 1 1 14 10Z',
   wrench:     'M10 6 L18 14 L14 18 L10 14Z',
   none:       '',
@@ -1669,6 +1678,7 @@ const StoryCtrl = {
 function initializeCinematicAdventure() {
   const backToMissionBtn = document.getElementById('backToMissionBtn');
   const storySkipBtn     = document.getElementById('storySkipBtn');
+  const viewSituationPill = document.getElementById('viewSituationPill');
 
   if (backToMissionBtn) {
     backToMissionBtn.addEventListener('click', () => {
@@ -1678,6 +1688,15 @@ function initializeCinematicAdventure() {
   }
   if (storySkipBtn) {
     storySkipBtn.addEventListener('click', () => StoryCtrl.skipAll());
+  }
+
+  if (viewSituationPill && !viewSituationPill._wired) {
+    viewSituationPill._wired = true;
+    viewSituationPill.addEventListener('click', () => {
+      const lesson = AppState.currentSession._lesson;
+      if (lesson) showCrisisBriefing(lesson, true);
+      else showToast('⚠️ Situation report will be available once mission loads.');
+    });
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1693,6 +1712,90 @@ function initializeCinematicAdventure() {
 /* =========================================================
    Cinematic Adventure Renderer — entry point + helpers
    ========================================================= */
+
+function showCrisisBriefing(lesson, isReviewOnly = false) {
+  const modal = document.getElementById('crisisBriefingModal');
+  const titleEl = document.getElementById('crisisMissionTitle');
+  const uBadgeEl = document.getElementById('crisisUniverseBadge');
+  const sitEl = document.getElementById('crisisSituationText');
+  const probEl = document.getElementById('crisisProblemText');
+  const stakesEl = document.getElementById('crisisStakesText');
+  const heroEl = document.getElementById('crisisHeroText');
+  const squadEl = document.getElementById('crisisSquadText');
+  const startBtn = document.getElementById('startAdventureFromBriefingBtn');
+  const closeBtn = document.getElementById('closeCrisisBriefingBtn');
+
+  if (!modal) return;
+
+  const currentU = AppState.currentUniverse || 'harrypotter';
+  const uName = AppState.universeThemes[currentU]?.name || currentU;
+  const uIcons = {
+    harrypotter: '🧙‍♂️',
+    marvel: '⚡',
+    anime: '⚔️',
+    space: '🚀',
+    pirates: '🏴‍☠️',
+    mythology: '🕉️'
+  };
+  const uIcon = uIcons[currentU] || '🌌';
+
+  const mission = lesson.mission || {};
+  const topic = lesson.discovery?.title || AppState.currentSession.mission?.topic || 'the mission';
+
+  // Fallbacks if AI didn't provide separate fields
+  const title = mission.title || `Crisis Encounter: ${topic}`;
+  const situation = mission.situation || mission.problem || `A critical emergency has erupted across the ${uName} universe involving ${topic}. The regional balance is dangerously unstable.`;
+  const problem = mission.problem || mission.situation || `You and your squad must work together to crack the exact principle of ${topic} and resolve the crisis mechanism before it is too late.`;
+  const stakes = mission.stakes || 'Immediate systemic destabilization and catastrophic collapse of the sector.';
+
+  const ch = AppState.character || {};
+  const heroName = ch.name || 'Hero';
+  const heroRole = ch.role || 'Squad Specialist';
+  const heroPower = ch.power ? ` • Power: ${ch.power}` : '';
+
+  // Active NPC allies
+  const npcs = (UNIVERSE_NPCS[currentU] || []).map(n => n.name).slice(0, 4).join(', ');
+
+  if (titleEl) titleEl.textContent = title;
+  if (uBadgeEl) uBadgeEl.textContent = `${uIcon} ${uName} Universe`;
+  if (sitEl) sitEl.textContent = situation;
+  if (probEl) probEl.textContent = problem;
+  if (stakesEl) stakesEl.textContent = stakes;
+  if (heroEl) heroEl.textContent = `${heroName} (${heroRole})${heroPower}`;
+  if (squadEl) squadEl.textContent = npcs ? `${npcs} and your squad` : 'Your squad allies';
+
+  modal.classList.remove('hidden-element', 'dismissed');
+  modal.classList.add('active');
+
+  if (isReviewOnly) {
+    if (closeBtn) closeBtn.classList.remove('hidden-element');
+    if (startBtn) {
+      startBtn.textContent = '✕ Return to Adventure';
+      startBtn.onclick = () => {
+        modal.classList.remove('active');
+        modal.classList.add('dismissed');
+      };
+    }
+  } else {
+    if (closeBtn) closeBtn.classList.add('hidden-element');
+    if (startBtn) {
+      startBtn.textContent = '⚔️ ACCEPT MISSION & ENTER ADVENTURE →';
+      startBtn.onclick = () => {
+        modal.classList.remove('active');
+        modal.classList.add('dismissed');
+        updateAdventureProgress(lesson, 0);
+        renderAdventureSceneByIndex(0, lesson);
+      };
+    }
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.classList.remove('active');
+      modal.classList.add('dismissed');
+    };
+  }
+}
 
 function renderCinematicAdventure(lesson) {
   if (!lesson || !Array.isArray(lesson.scenes) || lesson.scenes.length === 0) {
@@ -1723,8 +1826,8 @@ function renderCinematicAdventure(lesson) {
   if (flow)      flow.innerHTML = '';
   if (actions)   actions.innerHTML = '';
 
-  updateAdventureProgress(lesson, 0);
-  renderAdventureSceneByIndex(0, lesson);
+  // Show the Situation and Problem to Tackle Crisis Briefing before the adventure scenes start!
+  showCrisisBriefing(lesson, false);
 }
 
 function updateAdventureProgress(lesson, idx) {
@@ -1799,7 +1902,20 @@ function renderCompactCast(scene, lesson) {
   const appKey = (ch.appearance?.avatar || ch.appearance?.id || ch.appearance?.type || 'robed').toLowerCase();
   const tintObj = APPEARANCE_TINTS[appKey] || APPEARANCE_TINTS['robed'] || APPEARANCE_TINTS['default'];
   const wk = (ch.weapon || '').toLowerCase();
-  const prop = WEAPON_PROPS[wk] !== undefined ? wk : 'none';
+  let prop = 'none';
+  if (wk.includes('trishula') || wk.includes('trident')) prop = 'trident';
+  else if (wk.includes('chakra') || wk.includes('discus')) prop = 'discus';
+  else if (wk.includes('bow') || wk.includes('gandiva')) prop = 'bow';
+  else if (wk.includes('gada') || wk.includes('mace') || wk.includes('hammer')) prop = 'hammer';
+  else if (wk.includes('flute') || wk.includes('venu')) prop = 'flute';
+  else if (wk.includes('wand')) prop = 'wand';
+  else if (wk.includes('sword') || wk.includes('katana') || wk.includes('cutlass')) prop = 'sword';
+  else if (wk.includes('staff')) prop = 'staff';
+  else if (wk.includes('repulsor')) prop = 'repulsor';
+  else if (wk.includes('compass')) prop = 'compass';
+  else if (wk.includes('wrench')) prop = 'wrench';
+  else if (wk.includes('scanner')) prop = 'scanner';
+  else if (WEAPON_PROPS[wk] !== undefined) prop = wk;
   const learnerActive = activeNames.has('you') || activeNames.has((ch.name || '').toLowerCase()) || activeNames.size === 0;
 
   // Learner mini sprite
@@ -2192,9 +2308,9 @@ const UNIVERSE_BADGES = {
     },
     {
       id: 'myth_champion',
-      title: 'Deva Sovereign',
+      title: 'Dharma Sovereign',
       icon: '👑',
-      description: 'Earned 300+ Mythology knowledge points.'
+      description: 'Earned 300+ Hindu Mythology knowledge points.'
     }
   ],
   pirates: [
@@ -2613,7 +2729,7 @@ function renderHubUniverseTabs() {
     { key: 'marvel', name: 'Marvel', icon: '⚡' },
     { key: 'space', name: 'Deep Space', icon: '🚀' },
     { key: 'anime', name: 'Anime', icon: '⚔️' },
-    { key: 'mythology', name: 'Mythology', icon: '🏛️' },
+    { key: 'mythology', name: 'Hindu Mythology', icon: '🕉️' },
     { key: 'pirates', name: 'Pirates', icon: '🏴‍☠️' }
   ];
 

@@ -16,21 +16,24 @@ The player is PLAYING an intense Marvel superhero crisis. They are NOT listening
 
 TONY STARK / IRON MAN (SARCASTIC PROTAGONIST ALLY):
 - Brilliant, fast-talking, sarcastic, demands excellence.
-- Quips under fire, fires micro-missiles, analyzes data telemetry aloud.
-- Backs the player's clever thinking with high-tech firepower: "Nice read, kid. Let's see if your hands are as fast as your brain."
+- Actively deploys high-tech solutions: fires repulsors, overrides firewalls, recalibrates electromagnetic shields, and runs telemetry calculations aloud.
+- Coordinates tactical team maneuvers: "I'm re-routing power through the nanotech matrix to buy us thirty seconds! Kid, align the circuit on your side!"
 
 PETER PARKER / SPIDER-MAN (THE COMIC RELIEF ALLY):
 - Panics comically, talks a mile a minute, cracks pop-culture jokes while hanging upside down.
-- "Oh man, Mr. Stark, if this reactor explodes, Aunt May is gonna ground me until the next millennium!"
-- Quick on his feet, web-slings debris, and brings heartwarming humor to the crisis.
+- Actively uses web-shooters to catch falling debris and pin rogue conduits.
+- "Oh man, Mr. Stark, if this reactor blows, Aunt May is gonna ground me until the next millennium!"
 
 LOKI / RIVAL VILLAIN (THE MOCKING ANTAGONIST):
 - Taunts, sneers, and looks down on the heroes with aristocratic condescension.
 - "Is this truly the pinnacle of Midgard's defenders? A mewling rookie trembling before cosmic power?"
-- Challenges the player's logic and tries to exploit their mistakes.
+- Challenges the squad's logic and tries to exploit their mistakes.
 
 THOR / HULK (THE POWERHOUSE):
-- Thor summons thunder and challenges threats with booming warrior laughter; Hulk smashes physical barriers when energy surges!
+- Thor summons lightning from Mjolnir to stabilize rogue energy surges; Hulk smashes physical barriers to clear access channels!
+
+ENSEMBLE SQUAD RULE:
+- The player is a squad teammate, NOT the sole hero. Tony, Thor, and Peter actively fight, compute, and use their powers alongside the player.
 
 ==================================================
 3. CONCEPT AS A LIVING TECH/PHYSICS MECHANISM

@@ -93,13 +93,13 @@ const AppState = {
       }
     },
     mythology: {
-      name: 'Mythology',
-      identity: 'spiritual/ancient/majestic',
+      name: 'Hindu Mythology',
+      identity: 'sacred/dharmic/majestic',
       colors: {
-        primary: '#ffd166',
-        secondary: '#ffd980',
+        primary: '#ff9933',
+        secondary: '#ffd166',
         accent: '#7c5cff',
-        background: '#1a150a'
+        background: '#150d05'
       },
       typography: {
         display: 'Cinzel',

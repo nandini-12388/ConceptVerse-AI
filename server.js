@@ -58,7 +58,7 @@ function getSystemPrompt(theme) {
         return animePrompt;
 
     case "mythology":
-    console.log("🔥 MYTHOLOGY CASE HIT");
+    console.log("🔥 HINDU MYTHOLOGY CASE HIT");
     console.log(mythologyPrompt.slice(0,300));
     return mythologyPrompt;
 
@@ -156,31 +156,31 @@ Address the player directly as ${charName} in dialogue and choice questions. Wea
   }
 
   const STORY_INSTRUCTION = `
-CRITICAL STORYTELLING INSTRUCTIONS — HIGH-STAKES CINEMATIC ADVENTURE:
+CRITICAL STORYTELLING INSTRUCTIONS — HIGH-STAKES ENSEMBLE CINEMATIC ADVENTURE:
 
 1. ABSOLUTELY ZERO TUTORING / NO STUDENT-TEACHER DYNAMICS:
-   - The player is a HERO / ADVENTURER, NOT a student attending a class or lecture.
+   - The player and their companions are HEROES / SQUAD MEMBERS, NOT students attending a class or lecture.
    - BANNED: Definitions, study tips, classroom lectures ("Remember, A pairs with T and C with G...", "Let's review how this works...", "Good job student!").
    - NEVER have characters explain science concepts directly in dialogue like a teacher.
    - The characters are comrades, rivals, or adversaries caught in a high-stakes, fast-moving crisis!
 
-2. MANDATORY CLASHING MULTI-CHARACTER ENSEMBLE IN EVERY SCENE:
-   Every single scene MUST feature active dialogue and interactions between at least 2 to 3 distinct characters from this universe, each fulfilling their true personality archetype:
-   - PROTAGONIST / ALLY (e.g., Harry, Hermione, Tony Stark, Captain Nova, Kai, Shiva):
-     Backs up the player, uses their powers/skills/loyalty, and offers sharp tactical observations without giving the answer away.
-   - ANTAGONIST / RIVAL (e.g., Draco Malfoy, Loki, The Asura, Captain Flint, Riku, Rival Challenger):
-     MOCKS the player, sneers, doubts their capabilities, and challenges them with biting snark ("You actually think your wand-work can crack this serpentine lock, ${charName}? Even Crabbe would know better!").
-   - COMIC RELIEF (e.g., Ron Weasley, Spider-Man, Bolt, Boomer, Riku, Narada):
-     Panics comically, cracks sarcastic or absurd jokes, makes ridiculous guesses, and keeps the energy funny and human ("Bloody hell, if that glowing rune blows up, I'm defecting to Durmstrang!").
-   - THE PLAYER (${charName}):
-     Addressed directly by name, physically present, wielding their chosen weapon, power, and role to make heroic choices!
+2. ENSEMBLE TEAM SQUAD (PLAYER IS A TEAM MEMBER, NOT THE LONE HERO):
+   - The player (${charName}) is an active member of the squad, NOT an overpowered sole hero who solves everything alone.
+   - OTHER UNIVERSE CHARACTERS MUST ACTIVELY USE THEIR OWN POWERS, INTELLIGENCE, MAGIC, AND TECH:
+     * Comrades / Allies (e.g. Hermione, Tony Stark, Thor, Lord Shiva, Lord Vishnu, Captain Nova, Kai) actively cast protective spells, calculate power frequencies, use divine astras, shield the squad, and crack portions of the crisis with their own brilliant minds.
+     * The crisis is solved through COORDINATED TEAMWORK where the player contributes their specific power/insight alongside their comrades' active abilities.
+   - MANDATORY CLASHING ROSTER IN EVERY SCENE:
+     * ALLY / COMRADE: Actively fights, uses their powers/magic/intellect, and offers sharp tactical observations.
+     * ANTAGONIST / RIVAL (e.g., Draco Malfoy, Loki, The Asura, Captain Flint, Riku): MOCKS the squad, sneers, doubts their capabilities, and challenges them with biting snark.
+     * COMIC RELIEF (e.g., Ron Weasley, Spider-Man, Bolt, Boomer, Narada): Panics comically, cracks sarcastic or absurd jokes, makes ridiculous guesses, and keeps the energy funny and human.
+     * THE PLAYER (${charName}): Addressed directly, coordinating with the squad, wielding their weapon and power to make key tactical decisions.
 
 3. REAL UNIVERSE FLAVOR, POWERS & DANGERS:
-   - Harry Potter: Named spells (Incendio, Alohomora, Protego, Lumos Maxima, Expelliarmus), wand movements, bubbling cauldrons, dark artifacts, magical creatures, shifting staircases.
+   - Harry Potter: Named spells (Incendio, Alohomora, Protego Maxima, Lumos, Expelliarmus), wand movements, dark artifacts, shifting staircases.
    - Marvel: Arc reactor surges, Stark repulsors, web-shooters, vibranium shields, Mjolnir lightning, JARVIS tactical alerts.
    - Space: Hull breaches, plasma conduit fires, gravity drive anomalies, AI warning klaxons, scanner telemetry.
    - Anime: Martial stances, ki/chakra bursts, spirit seals, signature strikes, aura flare-ups.
-   - Mythology: Divine weapons (Trishula, Sudarshana Chakra, Vajra), cosmic disturbances, celestial mantras, asura boons.
+   - Hindu Mythology: Divine astras (Trishula, Sudarshana Chakra, Gandiva, Gada), cosmic disturbances in the Lokas, celestial mantras, asura boons, Dharma, and cosmic balance.
    - Pirates: Roaring broadside cannons, cutlasses, cursed Aztec gold, swirling whirlpools, kraken tentacles.
 
 4. THE CONCEPT IS THE PHYSICAL/MAGICAL PUZZLE MECHANISM:
@@ -201,7 +201,14 @@ CRITICAL STORYTELLING INSTRUCTIONS — HIGH-STAKES CINEMATIC ADVENTURE:
 
 FINAL JSON SHAPE — Return ONLY this JSON:
 {
-  "mission": { "title": "...", "problem": "...", "reward": "..." },
+  "mission": {
+    "title": "<Catchy crisis mission title>",
+    "situation": "<2-3 vivid sentences detailing the exact active catastrophe/emergency currently unfolding in the world>",
+    "problem": "<The EXACT, precise mechanical/scientific/magical problem that MUST be tackled and resolved to avert disaster>",
+    "stakes": "<What catastrophe occurs if this problem is not solved immediately>",
+    "objective": "<The clear victory condition the squad must achieve together>",
+    "reward": "<Honor/knowledge gained>"
+  },
   "scenes": [
     { "id": "scene_1", "location": "...", "next": "scene_2", "beats": [ ... ] },
     { "id": "scene_2", "location": "...", "next": "scene_3", "beats": [ ... ] },
@@ -236,15 +243,17 @@ FINAL JSON SHAPE — Return ONLY this JSON:
               role: "user",
               content: `
 MISSION TOPIC: ${topic}
-PLAYER HERO: ${character?.name || 'Adventurer'} (Universe: ${theme})
+PLAYER SQUAD MEMBER: ${character?.name || 'Adventurer'} (Universe: ${theme})
 ${character ? `TRAITS: Power=${character.power || 'Courage'}, Weapon=${character.weapon || 'Focus'}, Role=${character.role || 'Hero'}, Personality=${Array.isArray(character.personality) ? character.personality.join(', ') : character.personality || 'Determined'}` : ''}
 
-Generate an epic, high-stakes cinematic adventure where ${character?.name || 'the player'} and their companions confront a genuine crisis in the ${theme} universe!
-The academic concept (${topic}) must serve as the real physical/magical/technological law of the world that solves the crisis.
+Generate an epic, high-stakes cinematic adventure where the squad confronts a genuine crisis in the ${theme} universe!
 CRITICAL RULES:
+- The player (${character?.name || 'the player'}) is a squad member, NOT the sole hero.
+- Established characters MUST actively use their own signature powers, intelligence, spells, or technology to fight and tackle the crisis!
+- Explicitly detail the ACTIVE SITUATION and the EXACT PROBLEM TO TACKLE in the mission object.
+- The academic concept (${topic}) must serve as the real physical/magical/technological law of the world that solves the crisis.
 - Absolutely NO classroom/tutoring dialogue. Do not lecture!
-- Include multiple characters actively speaking: allies helping, antagonists/rivals mocking, and comic relief cracking jokes.
-- Use authentic universe powers, spells, and dangers!
+- Include active dialogue: allies coordinating with their powers, antagonists mocking, comic relief cracking jokes.
 - Return ONLY valid JSON matching the schema.
 `
             }

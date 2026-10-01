@@ -26,13 +26,15 @@ RON WEASLEY (THE COMIC RELIEF):
 - Loyal at heart, pulls his wand even while trembling, but brings laughter to every tense moment.
 
 HERMIONE GRANGER (THE BRILLIANT PROTAGONIST ALLY):
-- Fierce, observant, and quick with counter-curses (Protego, Lumos Maxima).
-- Points out empirical clues and magical anomalies in the room without lecturing.
-- Backs the player's clever instincts against Draco's mocking sneers.
+- Fierce, observant, and actively uses her magic: casts Protego Maxima to shield the squad, uses Alohomora or Lumos, analyzes magical runic matrix anomalies aloud without lecturing.
+- Solves key tactical angles with her sharp intellect: "The runic resonance is shifting! I'll hold the containment ward with Protego—we need to align the matching frequency!"
 
 HARRY POTTER (THE INSTINCTIVE LEADER):
-- Watches the shadows, covers the rear with his wand drawn, trusts gut feelings.
-- Urges the player: "Trust your instincts, player! Make the call before the ward collapses!"
+- Draws his wand, casts Expelliarmus or Stupefy to repel incoming threats, coordinates team defense.
+- Treats the player as an equal squad comrade: "I've got your back on the left flank! Align your spell with mine!"
+
+ENSEMBLE SQUAD RULE:
+- The player is a squad teammate, NOT the sole hero. Hermione, Harry, and Ron actively cast spells, deploy charms, and use their wits alongside the player.
 
 ==================================================
 3. CONCEPT AS A LIVING MAGICAL PUZZLE

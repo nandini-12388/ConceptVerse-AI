@@ -240,6 +240,9 @@
       <div class="cinematic-adventure-container">
         <div class="adventure-header glass">
           <button class="back-btn" id="backToMissionBtn">← Exit Adventure</button>
+          <button type="button" class="view-situation-pill" id="viewSituationPill" title="Review the active situation and problem">
+            🚨 Situation &amp; Problem
+          </button>
           <div class="adventure-progress" id="adventureProgress">
             <div class="progress-bar">
               <div class="progress-fill" id="adventureProgressFill"></div>
@@ -249,6 +252,75 @@
           <div class="adventure-points-display">
             <span class="points-icon">⭐</span>
             <span class="points-value" id="adventurePoints">0</span>
+          </div>
+        </div>
+
+        <!-- PRE-ADVENTURE CRISIS BRIEFING: SITUATION & PROBLEM TO TACKLE -->
+        <div class="crisis-briefing-modal" id="crisisBriefingModal">
+          <div class="crisis-briefing-card glass">
+            <div class="crisis-briefing-header">
+              <div class="crisis-badge-row">
+                <span class="crisis-tag"><span class="pulse-dot"></span> ACTIVE CRISIS SITUATION</span>
+                <span class="crisis-universe-badge" id="crisisUniverseBadge">🕉️ Hindu Mythology Universe</span>
+                <button type="button" class="crisis-close-btn hidden-element" id="closeCrisisBriefingBtn" aria-label="Close situation briefing">✕</button>
+              </div>
+              <h2 class="crisis-title" id="crisisMissionTitle">Mission Crisis Title</h2>
+            </div>
+            
+            <div class="crisis-briefing-body">
+              <!-- Situation Box -->
+              <div class="crisis-section crisis-situation-box">
+                <div class="crisis-section-label">
+                  <span class="crisis-icon">🌐</span>
+                  <span>CURRENT SITUATION IN THE UNIVERSE</span>
+                </div>
+                <p class="crisis-text" id="crisisSituationText">
+                  Loading situation report...
+                </p>
+              </div>
+
+              <!-- Problem to Tackle Box -->
+              <div class="crisis-section crisis-problem-box">
+                <div class="crisis-section-label">
+                  <span class="crisis-icon">🎯</span>
+                  <span>THE EXACT PROBLEM TO TACKLE</span>
+                </div>
+                <p class="crisis-problem-text" id="crisisProblemText">
+                  Loading problem statement...
+                </p>
+              </div>
+
+              <!-- Meta / Squad Info -->
+              <div class="crisis-meta-grid">
+                <div class="crisis-meta-item">
+                  <span class="meta-icon">💥</span>
+                  <div>
+                    <div class="meta-label">STAKES IF UNRESOLVED</div>
+                    <div class="meta-value" id="crisisStakesText">Catastrophic chain reaction</div>
+                  </div>
+                </div>
+                <div class="crisis-meta-item">
+                  <span class="meta-icon">🛡️</span>
+                  <div>
+                    <div class="meta-label">YOUR SQUAD ROLE</div>
+                    <div class="meta-value" id="crisisHeroText">Hero Name</div>
+                  </div>
+                </div>
+                <div class="crisis-meta-item crisis-meta-item--squad">
+                  <span class="meta-icon">👥</span>
+                  <div>
+                    <div class="meta-label">ACTIVE SQUAD COMRADES</div>
+                    <div class="meta-value" id="crisisSquadText">Allies &amp; Companions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="crisis-briefing-footer">
+              <button type="button" class="primary-btn pulse-glow-btn" id="startAdventureFromBriefingBtn">
+                ⚔️ ACCEPT MISSION &amp; ENTER ADVENTURE →
+              </button>
+            </div>
           </div>
         </div>
 
