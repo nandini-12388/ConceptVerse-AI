@@ -19,6 +19,11 @@ function initializeApp() {
   try {
     // Initialize starfield background
     buildStarfield();
+
+    // 3D galaxy background (first page only)
+    if (typeof window.GalaxyRenderer !== 'undefined' && !window.galaxyEngine) {
+      window.galaxyEngine = new window.GalaxyRenderer('galaxyCanvas');
+    }
     
     // Set initial state
     AppState.setState(AppState.NAVIGATION_STATES.UNIVERSE_SELECTION);
@@ -69,7 +74,12 @@ function handleStateChange(event) {
     showScreen(screenId);
   }
 
-  // Refresh screen-specific data each time we enter a screen
+  // 3D galaxy background is shown on the first page only
+  const galaxyCanvas = document.getElementById('galaxyCanvas');
+  if (galaxyCanvas) {
+    galaxyCanvas.classList.toggle('is-hidden', newState !== 'UNIVERSE_SELECTION');
+  }
+
   if (newState === 'CHARACTER_CREATION') { initializeCharacterOptions(); renderSavedCharacters(); }
   if (newState === 'MISSION_SELECTION') updateCharacterInfoBar();
   if (newState === 'CONCEPT_UNLOCKED') populateConceptUnlocked(AppState.currentSession.conceptData);

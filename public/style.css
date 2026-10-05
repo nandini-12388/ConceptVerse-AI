@@ -77,7 +77,27 @@ body {
   border-radius: 6px;
 }
 
-/* ---------- Background layers ---------- */
+/* 3D galaxy — first page only, on pure black */
+.galaxy-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
+  pointer-events: none;
+  background: #000000;
+  opacity: 1;
+  transition: opacity 0.6s var(--ease);
+}
+
+.galaxy-canvas.is-hidden {
+  opacity: 0;
+}
+
+/* Hide the colored glows while the galaxy is visible so the page stays black */
+.galaxy-canvas:not(.is-hidden) ~ .bg-glow {
+  display: none;
+}
 
 .bg-void {
   position: fixed;
