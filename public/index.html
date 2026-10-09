@@ -250,6 +250,12 @@
             </div>
             <span class="progress-text" id="adventureProgressText">Scene 1 of 5</span>
           </div>
+          <div class="voice-control-container" id="voiceControl">
+            <button type="button" class="voice-toggle-btn" id="voiceToggleBtn" aria-pressed="false" title="Auto-voices off — tap 🔊 on a line to hear it">
+              <span class="voice-toggle-icon">🔇</span>
+              <span class="voice-toggle-label">Voices Off</span>
+            </button>
+          </div>
           <div class="adventure-points-display">
             <span class="points-icon">⭐</span>
             <span class="points-value" id="adventurePoints">0</span>
@@ -615,5 +621,6 @@
   <script src="galaxy-bg.js"></script>
   <script src="app-state.js"></script>
   <script src="app-navigation.js"></script>
+  <script src="voice-engine.js"></script>
 </body>
 </html>

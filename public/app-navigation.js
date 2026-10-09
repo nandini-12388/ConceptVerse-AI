@@ -50,6 +50,67 @@ function initializeApp() {
   }
 }
 
+function getUniverseMentor(universeKey) {
+  const uni = universeKey || (typeof AppState !== 'undefined' && AppState.currentUniverse) || 'harrypotter';
+  const MENTORS = {
+    harrypotter: {
+      name: 'Albus Dumbledore',
+      title: "Dumbledore's Wisdom",
+      explanationTitle: "Dumbledore's Explanation",
+      summaryTitle: "Dumbledore's Key Concept",
+      icon: '🧙‍♂️',
+      buttonText: 'Hear Dumbledore',
+      profileKey: 'albus dumbledore'
+    },
+    marvel: {
+      name: 'Nick Fury',
+      title: "Fury's Strategic Intel",
+      explanationTitle: "Nick Fury's Explanation",
+      summaryTitle: "Nick Fury's Key Concept",
+      icon: '🕶️',
+      buttonText: 'Hear Nick Fury',
+      profileKey: 'nick fury'
+    },
+    space: {
+      name: 'Captain Nova',
+      title: "Captain Nova's Log",
+      explanationTitle: "Captain Nova's Explanation",
+      summaryTitle: "Captain Nova's Key Concept",
+      icon: '🚀',
+      buttonText: 'Hear Captain Nova',
+      profileKey: 'captain nova'
+    },
+    anime: {
+      name: 'Master Ren',
+      title: "Master Ren's Scroll",
+      explanationTitle: "Master Ren's Explanation",
+      summaryTitle: "Master Ren's Key Concept",
+      icon: '🥋',
+      buttonText: 'Hear Master Ren',
+      profileKey: 'master ren'
+    },
+    mythology: {
+      name: 'Sage Narada',
+      title: "Sage Narada's Sutra",
+      explanationTitle: "Sage Narada's Explanation",
+      summaryTitle: "Sage Narada's Key Concept",
+      icon: '🔱',
+      buttonText: 'Hear Sage Narada',
+      profileKey: 'narada'
+    },
+    pirates: {
+      name: 'Captain Redbeard',
+      title: "Redbeard's Log",
+      explanationTitle: "Captain Redbeard's Explanation",
+      summaryTitle: "Captain Redbeard's Key Concept",
+      icon: '🏴‍☠️',
+      buttonText: 'Hear Redbeard',
+      profileKey: 'captain redbeard'
+    }
+  };
+  return MENTORS[uni] || MENTORS.harrypotter;
+}
+
 function handleStateChange(event) {
   const newState = event.detail.state;
   console.log("State changed to:", newState);
@@ -788,13 +849,13 @@ const UNIVERSE_OPTIONS = {
     weapons: [
       'Trishula of Lord Shiva 🔱',
       'Sudarshana Chakra of Lord Vishnu ☸️',
-      'Gandiva Celestial Bow of Arjuna 🏹',
+      'Pinaka Divine Bow of Mahadev 🏹',
       'Vajra Gada of Lord Hanuman 🪨',
       'Brahmashira Supreme Astra ⚡',
       'Divine Venu Flute of Lord Krishna 🪈'
     ],
     roles: [
-      'Maharathi Archer (Master Celestial Bowman)',
+      'Maharathi Guardian (Master Celestial Champion)',
       'Devout Brahmarishi (Sage of Mantras & Tapasya)',
       'Dharmic Kshatriya Guardian',
       'Vanara Sena Warrior (Devoted Champion)',
@@ -818,12 +879,12 @@ const UNIVERSE_OPTIONS = {
       {
         id: 'ishtaDevata',
         label: 'Ishta Devata (Primary Devotion)',
-        options: ['Lord Shiva (Mahadev) 🔱', 'Lord Vishnu (Narayan) 🪷', 'Maa Durga (Adi Shakti) 🌺', 'Sri Rama & Hanuman 🏹']
+        options: ['Lord Shiva (Mahadev) 🔱', 'Lord Vishnu (Narayan) 🪷', 'Maa Durga (Adi Shakti) 🌺', 'Lord Hanuman 🪨']
       },
       {
         id: 'sacredRealm',
         label: 'Sacred Realm (Loka)',
-        options: ['Mount Kailash 🏔️', 'Vaikuntha Loka 🌌', 'Kurukshetra / Indraprastha ⚔️', 'Ayodhya / Mithila 🏛️']
+        options: ['Mount Kailash 🏔️', 'Vaikuntha Loka 🌌', 'Amaravati & Swarga Loka ⚡', 'Badrinath & Holy Mandakini 🌊']
       },
       {
         id: 'lineage',
@@ -1513,7 +1574,7 @@ const UNIVERSE_NPCS = {
     { name: 'Shiva',            hair: '#1a0a2e', skin: '#c8a882', trim: '#ff9933', prop: 'trident' },
     { name: 'Vishnu',           hair: '#1a1008', skin: '#f5d0a9', trim: '#ffd700', prop: 'discus' },
     { name: 'Hanuman',          hair: '#8B4513', skin: '#c8a882', trim: '#ff9933', prop: 'hammer' },
-    { name: 'Arjuna',           hair: '#1a1008', skin: '#f5d0a9', trim: '#ffd700', prop: 'bow' },
+    { name: 'Ganesha',          hair: '#1a1008', skin: '#f5d0a9', trim: '#ffd700', prop: 'staff' },
     { name: 'Narada',           hair: '#2c1b00', skin: '#f5d0a9', trim: '#ffb340', prop: 'flute' },
     { name: 'The Asura',        hair: '#cc5500', skin: '#8d6e4a', trim: '#ff4d5e', prop: 'none' },
   ]
@@ -2053,24 +2114,31 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
 
     } else if (b.t === 'action') {
       const beatEl = document.createElement('div');
-      beatEl.className = 'story-beat story-beat--action';
-      const actorName = isLearner ? learnerName : (who || 'You');
+      beatEl.className = 'story-beat story-beat--action story-beat--narration';
+      const rawText = (b.text || b.what || '').trim();
+      const actorName = isLearner ? learnerName : (who || '');
+      const startsWithPronoun = /^(he|she|they|it)\b/i.test(rawText);
+      let displayText = rawText;
+
+      if (!startsWithPronoun && rawText && actorName && !rawText.toLowerCase().startsWith(actorName.toLowerCase())) {
+        displayText = `${actorName} ${rawText}`;
+      }
+
       beatEl.innerHTML = `
-        <div class="beat-action-icon">⚡</div>
-        <div class="beat-action-body">
-          <span class="beat-action-actor">${escapeHtml(actorName)}</span>: ${escapeHtml(b.text || b.what || '')}
-        </div>
+        <div class="beat-narration-icon">⚡</div>
+        <div class="beat-narration-text">${escapeHtml(displayText)}</div>
       `;
       beatsFlow.appendChild(beatEl);
 
     } else if (b.t === 'discovery') {
       const beatEl = document.createElement('div');
-      beatEl.className = 'story-beat story-beat--discovery';
+      beatEl.className = 'story-beat story-beat--discovery story-beat--concept';
+      const mentor = getUniverseMentor(AppState.currentUniverse);
       beatEl.innerHTML = `
-        <div class="beat-action-icon">💡</div>
+        <div class="beat-action-icon">${mentor.icon}</div>
         <div class="beat-action-body">
-          <div class="beat-action-actor">Key Concept Discovery</div>
-          <div>${escapeHtml(b.text || '')}</div>
+          <div class="beat-action-actor" style="color: var(--universe-accent, #ffd700); font-weight:700;">${mentor.icon} Key Concept — ${escapeHtml(mentor.title)}</div>
+          <div class="beat-concept-text">${escapeHtml(b.text || '')}</div>
         </div>
       `;
       beatsFlow.appendChild(beatEl);
@@ -2092,6 +2160,11 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
     renderChronicleChoice(choiceBeat, scene, lesson);
   } else {
     renderChronicleContinue(scene, lesson, idx);
+  }
+
+  // Attach voice engine to dialogue lines (adds 🔊 buttons, handles auto-play if enabled)
+  if (window.VoiceEngine && typeof window.VoiceEngine.attachToScene === 'function') {
+    window.VoiceEngine.attachToScene(beatsFlow);
   }
 
   // Scroll to top of chronicle panel so story is read from top
@@ -2133,6 +2206,10 @@ function handleChronicleChoice(opt, card, scene, lesson) {
 
   const ap = document.getElementById('adventurePoints');
   if (ap) ap.textContent = AppState.userProgress.points;
+
+  if (window.VoiceEngine && typeof window.VoiceEngine.speakQuizFeedback === 'function') {
+    window.VoiceEngine.speakQuizFeedback(opt.isCorrect, opt.feedback, card);
+  }
 
   if (opt.feedback) {
     const fb = document.createElement('div');
@@ -2564,6 +2641,10 @@ function showChallengeFeedback(isCorrect) {
   if (feedbackPoints) {
     feedbackPoints.textContent = isCorrect ? '+10 points' : '-5 points';
   }
+
+  if (window.VoiceEngine && typeof window.VoiceEngine.speakQuizFeedback === 'function') {
+    window.VoiceEngine.speakQuizFeedback(isCorrect, isCorrect ? 'Well done!' : 'Not quite, but good effort!', feedbackArea);
+  }
 }
 
 function updateChallengePoints() {
@@ -2680,12 +2761,27 @@ function renderLearnInDetail(lesson) {
   const quizDiv  = document.getElementById('miniQuiz');
   const takeawayDiv = document.getElementById('conceptTakeawayCard');
 
+  const mentor = getUniverseMentor(AppState.currentUniverse);
+
   if (subtitle) subtitle.textContent = disc.title || 'Concept';
 
-  if (expDiv && det.explanation) {
-    expDiv.innerHTML = det.explanation.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-  } else if (expDiv && disc.text) {
-    expDiv.innerHTML = `<p>${escapeHtml(disc.text)}</p>`;
+  if (expDiv && (det.explanation || disc.text)) {
+    const textToExplain = Array.isArray(det.explanation) ? det.explanation.join(' ') : (disc.text || '');
+    expDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.6rem;">
+        <span style="font-weight:700; color: var(--universe-accent, #ffd700);">${mentor.icon} ${escapeHtml(mentor.explanationTitle)}</span>
+        <button type="button" class="voice-line-btn voice-concept-btn" id="speakConceptExpBtn">${mentor.icon} ${escapeHtml(mentor.buttonText)}</button>
+      </div>
+      ${Array.isArray(det.explanation) ? det.explanation.map(p => `<p>${escapeHtml(p)}</p>`).join('') : `<p>${escapeHtml(disc.text)}</p>`}
+    `;
+    const btn = expDiv.querySelector('#speakConceptExpBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (window.VoiceEngine && typeof window.VoiceEngine.speakKeyConcept === 'function') {
+          window.VoiceEngine.speakKeyConcept(textToExplain, AppState.currentUniverse);
+        }
+      });
+    }
   }
 
   if (advDiv && lesson.mission) {
@@ -2714,13 +2810,32 @@ function renderLearnInDetail(lesson) {
         if (!isCorrect && btns[pr.answer]) btns[pr.answer].classList.add('practice-correct');
         const ex = document.getElementById('practiceExplain');
         if (ex) ex.classList.remove('hidden-element');
+
+        if (window.VoiceEngine && typeof window.VoiceEngine.speakQuizFeedback === 'function') {
+          window.VoiceEngine.speakQuizFeedback(isCorrect, pr.explain, btn);
+        }
       });
     });
   }
 
   // Populate takeaway card with explanation bullets if present
   if (takeawayDiv && det.explanation) {
-    takeawayDiv.innerHTML = det.explanation.map(p => `<div class="takeaway-bullet"><span class="takeaway-icon">✅</span>${escapeHtml(p)}</div>`).join('');
+    const takeawayText = det.explanation.join(' ');
+    takeawayDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <span style="font-weight:700; color: var(--universe-accent, #ffd700);">${mentor.icon} ${escapeHtml(mentor.summaryTitle)}</span>
+        <button type="button" class="voice-line-btn voice-concept-btn" id="speakConceptTakeawayBtn">${mentor.icon} ${escapeHtml(mentor.buttonText)}</button>
+      </div>
+      ${det.explanation.map(p => `<div class="takeaway-bullet"><span class="takeaway-icon">✅</span>${escapeHtml(p)}</div>`).join('')}
+    `;
+    const btn = takeawayDiv.querySelector('#speakConceptTakeawayBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (window.VoiceEngine && typeof window.VoiceEngine.speakKeyConcept === 'function') {
+          window.VoiceEngine.speakKeyConcept(takeawayText, AppState.currentUniverse);
+        }
+      });
+    }
   }
 }
 

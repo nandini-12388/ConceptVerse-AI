@@ -981,6 +981,10 @@ function renderChoice(
           );
         }
 
+        if (window.VoiceEngine && typeof window.VoiceEngine.speakQuizFeedback === 'function') {
+          window.VoiceEngine.speakQuizFeedback(selectedOption.isCorrect, selectedOption.consequence, card);
+        }
+
         const scoreBadge =
           document.getElementById(
             "scoreBadge"

@@ -245,6 +245,13 @@ FINAL JSON SHAPE — Return ONLY this JSON:
 MISSION TOPIC: ${topic}
 PLAYER SQUAD MEMBER: ${character?.name || 'Adventurer'} (Universe: ${theme})
 ${character ? `TRAITS: Power=${character.power || 'Courage'}, Weapon=${character.weapon || 'Focus'}, Role=${character.role || 'Hero'}, Personality=${Array.isArray(character.personality) ? character.personality.join(', ') : character.personality || 'Determined'}` : ''}
+${theme === 'mythology' ? `
+SPECIAL HINDU MYTHOLOGY CHARACTERS & TONES:
+- Lord Shiva: CALM, SERENE, PEACEFUL, composed, holding cosmic stillness (Shanti Shakti).
+- Lord Vishnu: TEASING, PLAYFUL, CLEVER, WITTY, smiling mischievously with divine strategy.
+- The Asura: MISCHIEVOUSLY FUNNY, INNOCENT, QUIRKY, boastful yet comically gullible.
+- Storyline Companion / Ishta Dev: ${character?.universeSpecific?.ishtaDevata || 'Lord Hanuman / Sage Narada'} actively assisting ${character?.name || 'the player'}.
+` : ''}
 
 Generate an epic, high-stakes cinematic adventure where the squad confronts a genuine crisis in the ${theme} universe!
 CRITICAL RULES:

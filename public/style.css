@@ -4153,3 +4153,348 @@ body {
     font-size: 1.02rem;
   }
 }
+
+/* =========================================================
+   Character Voice Engine Styles
+   ========================================================= */
+
+/* Inline Speak Button on Dialogue Beats */
+.voice-line-btn {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--muted);
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.voice-line-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-color: var(--glass-border-strong);
+  transform: scale(1.08);
+}
+
+.voice-line-btn.is-playing {
+  background: var(--universe-primary, #7c5cff);
+  color: #fff;
+  border-color: var(--universe-accent, #ffd700);
+  box-shadow: 0 0 10px var(--universe-primary, #7c5cff);
+  animation: pulseVoiceBtn 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseVoiceBtn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* Dialogue Beat active voicing state */
+.story-beat--dialogue.is-voicing {
+  border-color: var(--universe-primary, #7c5cff) !important;
+  box-shadow: 0 0 16px rgba(124, 92, 255, 0.25);
+  background: rgba(124, 92, 255, 0.09) !important;
+}
+
+/* Active sprite mini equalizer glow */
+.character-sprite.is-voicing .sprite-figure {
+  animation: spriteSpeakMini 0.5s ease-in-out infinite alternate !important;
+  filter: drop-shadow(0 0 12px var(--universe-primary, #7c5cff)) !important;
+}
+
+.character-sprite.is-voicing .sprite-name {
+  background: var(--universe-primary, #7c5cff) !important;
+  color: #ffffff !important;
+  border-color: var(--universe-accent, #ffd700) !important;
+}
+
+/* Voice Control Header Toggle */
+.voice-control-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.voice-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--muted);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.voice-toggle-btn:hover {
+  background: var(--glass-bg-strong);
+  color: var(--text);
+  border-color: var(--glass-border-strong);
+}
+
+.voice-toggle-btn[aria-pressed="true"] {
+  background: rgba(124, 92, 255, 0.18);
+  border-color: var(--universe-primary, #7c5cff);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(124, 92, 255, 0.25);
+}
+
+.voice-toggle-btn[aria-pressed="true"] .voice-toggle-icon {
+  animation: voicePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
+}
+
+/* Voice Hint Popover */
+.voice-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 240px;
+  background: rgba(18, 19, 31, 0.95);
+  border: 1px solid var(--universe-primary, #7c5cff);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.voice-hint.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.voice-hint-text {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+}
+
+.voice-hint-text strong {
+  color: var(--universe-accent, #ffd700);
+}
+
+.voice-hint-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.voice-hint-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  color: var(--muted);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+
+.voice-hint-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.voice-hint-btn--primary {
+  background: var(--universe-primary, #7c5cff);
+  border-color: var(--universe-primary, #7c5cff);
+  color: #ffffff;
+}
+
+.voice-hint-btn--primary:hover {
+  background: var(--universe-secondary, #9b7edd);
+}
+
+/* Now Speaking Chip (fits inside compact stage arena location slot) */
+.voice-now-chip {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(18, 19, 31, 0.9);
+  border: 1px solid var(--universe-primary, #7c5cff);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  color: var(--text);
+  box-shadow: 0 0 12px rgba(124, 92, 255, 0.3);
+  animation: chipIn 0.25s var(--ease);
+  z-index: 20;
+}
+
+.voice-now-chip.is-open {
+  display: inline-flex;
+}
+
+.stage-arena.voice-active .scene-location {
+  display: none; /* Chip seamlessly replaces location tag while someone is speaking */
+}
+
+@keyframes chipIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.voice-now-avatar {
+  font-size: 0.9rem;
+}
+
+.voice-now-name {
+  font-weight: 700;
+  color: var(--universe-accent, #ffd700);
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Animated Equalizer bars */
+.voice-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+  margin: 0 0.2rem;
+}
+
+.voice-eq i {
+  width: 2px;
+  height: 100%;
+  background: var(--universe-primary, #7c5cff);
+  border-radius: 1px;
+  animation: eqBar 0.6s ease-in-out infinite alternate;
+}
+
+.voice-eq i:nth-child(2) { animation-delay: 0.15s; }
+.voice-eq i:nth-child(3) { animation-delay: 0.3s; }
+.voice-eq i:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes eqBar {
+  0% { height: 20%; }
+  100% { height: 100%; }
+}
+
+.voice-now-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  padding: 0;
+}
+
+.voice-now-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.voice-now-stop:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Voice Action Buttons for Dialogue and Narration */
+.voice-line-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice-line-btn:hover {
+  background: var(--universe-primary, #7c5cff);
+  color: #fff;
+  border-color: var(--universe-primary, #7c5cff);
+  transform: scale(1.05);
+}
+
+.voice-line-btn.is-playing {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.story-beat--narration {
+  position: relative;
+}
+
+.voice-narration-btn {
+  float: right;
+  margin-left: 0.5rem;
+  margin-top: -2px;
+}
+
+/* Magic Wand Sparkles & Disastrous Firecrackers Animations */
+.fx-particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 99999;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+@keyframes magicPulse {
+  0% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); transform: scale(1); }
+  50% { box-shadow: 0 0 35px rgba(255, 215, 0, 0.9), 0 0 55px rgba(124, 92, 255, 0.8); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); transform: scale(1); }
+}
+
+.fx-magic-pulse {
+  animation: magicPulse 0.8s ease-out;
+}
+
+@keyframes shakeBoom {
+  0% { transform: translate(0, 0) rotate(0deg); box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  15% { transform: translate(-7px, -5px) rotate(-3deg); box-shadow: 0 0 30px rgba(239, 68, 68, 0.9), 0 0 50px rgba(249, 115, 22, 0.7); }
+  30% { transform: translate(7px, 5px) rotate(3deg); }
+  45% { transform: translate(-6px, 4px) rotate(-2deg); }
+  60% { transform: translate(6px, -3px) rotate(2deg); }
+  75% { transform: translate(-3px, 2px) rotate(-1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.fx-shake-boom {
+  animation: shakeBoom 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+
