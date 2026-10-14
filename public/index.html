@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="animations.css" /> <!-- motion layer: remove this + animations.js to revert -->
 </head>
 <body>
 
@@ -25,6 +26,14 @@
   <div class="universe-background" id="universeBackground" aria-hidden="true"></div>
 
   <main class="page">
+
+    <!-- Top Action Bar (Codex & Badges) -->
+    <header class="app-top-bar" id="appTopBar">
+      <button type="button" class="top-bar-btn" id="openCodexBtn" title="Open Multiverse Codex & Badges">
+        <span class="top-bar-icon">📜</span>
+        <span class="top-bar-label">Codex & Badges</span>
+      </button>
+    </header>
 
     <!-- SCREEN 1: IMMERSIVE UNIVERSE SELECTION -->
     <section class="screen universe-selection-screen" id="universeSelectionScreen">
@@ -183,51 +192,76 @@
           <p class="screen-subtitle">Select a mission that contains the knowledge you seek.</p>
         </div>
 
-        <!-- Topic Input Area -->
+        <!-- Dual Mode Topic & Study Notes Area -->
         <div id="topicInputArea" class="glass topic-input-card">
-          <label class="form-label topic-input-label" for="missionTopicInput">
-            🧠 What do you want to learn today?
-          </label>
-          <div class="topic-input-row">
-            <input type="text" id="missionTopicInput" class="form-input topic-input-field"
-              placeholder="e.g. Photosynthesis, Black Holes, Fractions…" />
-            <button class="primary-btn" id="startMissionBtn">
-              Start Mission →
+          <!-- Mode Tabs -->
+          <div class="topic-mode-tabs" role="tablist">
+            <button type="button" class="topic-tab-btn active" id="tabQuickTopic" role="tab" aria-selected="true">
+              🎯 Quick Topic
+            </button>
+            <button type="button" class="topic-tab-btn" id="tabStudyNotes" role="tab" aria-selected="false">
+              📄 Study My Notes / Upload Docs
             </button>
           </div>
-          <div id="missionLoadingState" style="display: none; margin-top: 8px; font-size: 0.88rem; opacity: 0.85;">
-            ⏳ Your adventure is being created by AI… hang tight!
+
+          <!-- Mode 1: Quick Topic Panel -->
+          <div class="topic-tab-panel" id="panelQuickTopic">
+            <label class="form-label topic-input-label" for="missionTopicInput">
+              🧠 What do you want to learn today?
+            </label>
+            <div class="topic-input-row">
+              <input type="text" id="missionTopicInput" class="form-input topic-input-field"
+                placeholder="e.g. Photosynthesis, Black Holes, Fractions…" />
+              <button class="primary-btn" id="startMissionBtn">
+                Start Mission →
+              </button>
+            </div>
+          </div>
+
+          <!-- Mode 2: Study Notes Upload & Paste Panel -->
+          <div class="topic-tab-panel hidden-element" id="panelStudyNotes">
+            <label class="form-label topic-input-label">
+              📚 Upload or Paste Your Exam Notes / Textbook Summary
+            </label>
+
+            <div class="notes-upload-wrapper">
+              <!-- File Drag & Drop Zone -->
+              <div class="notes-drop-zone" id="notesDropZone">
+                <span class="drop-zone-icon">📁</span>
+                <div class="drop-zone-text">
+                  <strong>Drag &amp; drop your study file here</strong>
+                  <span>Supports .txt, .md, .pdf, .docx, .json files</span>
+                </div>
+                <input type="file" id="notesFileInput" accept=".txt,.md,.pdf,.docx,.json,.csv" hidden />
+                <button type="button" class="option-btn notes-browse-btn" id="browseNotesBtn">Browse File</button>
+              </div>
+
+              <div class="notes-divider"><span>OR PASTE TEXT DIRECTLY</span></div>
+
+              <!-- Notes Text Area -->
+              <textarea id="notesTextInput" class="form-textarea notes-textarea" 
+                placeholder="Paste your lecture notes, textbook summary, or exam topics here..."></textarea>
+            </div>
+
+            <!-- Notes Stats & Action Row -->
+            <div class="notes-action-row">
+              <div class="notes-stats-badge hidden-element" id="notesStatsBadge">
+                <span class="notes-stats-icon">📄</span>
+                <span id="notesStatsText">No notes loaded</span>
+              </div>
+              <button type="button" class="primary-btn notes-start-btn" id="startNotesMissionBtn">
+                🚀 Convert Notes into Quest →
+              </button>
+            </div>
+          </div>
+
+          <div id="missionLoadingState" style="display: none; margin-top: 12px; font-size: 0.88rem; opacity: 0.9; text-align: center;">
+            ⏳ Your custom multiverse study quest is being created by AI… hang tight!
           </div>
         </div>
 
         <div class="mission-cards-grid" id="missionCardsGrid">
-          <!-- Mission cards will be dynamically generated -->
-          <div class="mission-card glass placeholder-mission-card">
-            <div class="mission-card-placeholder">
-              <span class="mission-placeholder-icon">🎯</span>
-              <h4 class="mission-placeholder-title">Mission Title</h4>
-              <p class="mission-placeholder-description">Mission description will appear here</p>
-              <div class="mission-placeholder-badge">Coming Soon</div>
-            </div>
-          </div>
-          
-          <div class="mission-card glass placeholder-mission-card">
-            <div class="mission-card-placeholder">
-              <span class="mission-placeholder-icon">🔮</span>
-              <h4 class="mission-placeholder-title">Another Mission</h4>
-              <p class="mission-placeholder-description">More missions will be generated by AI</p>
-              <div class="mission-placeholder-badge">Coming Soon</div>
-            </div>
-          </div>
-
-          <div class="mission-card glass placeholder-mission-card">
-            <div class="mission-card-placeholder">
-              <span class="mission-placeholder-icon">⚡</span>
-              <h4 class="mission-placeholder-title">Custom Mission</h4>
-              <p class="mission-placeholder-description">Enter your own learning topic</p>
-              <div class="mission-placeholder-badge">Custom</div>
-            </div>
-          </div>
+          <!-- Curated mission cards will be dynamically populated per universe -->
         </div>
 
         <div class="hub-access-bar glass">
@@ -453,6 +487,15 @@
             </p>
           </div>
 
+          <!-- Interactive Concept Canvas Visualizer Widget -->
+          <div class="concept-visualizer-container" id="conceptVisualizerContainer">
+            <div class="visualizer-header">
+              <span class="visualizer-title">✨ Interactive Concept Matrix</span>
+              <span class="visualizer-hint">Move mouse / Tap to pulse energy</span>
+            </div>
+            <canvas id="conceptCanvas" class="concept-canvas" width="600" height="220"></canvas>
+          </div>
+
           <div class="concept-actions">
             <button class="action-btn primary-action" id="learnInDetailBtn">
               <span class="action-icon">✨</span>
@@ -618,9 +661,87 @@
     <div class="audio-hook" id="voiceHook" data-type="voice"></div>
   </div>
 
+  <!-- MULTIVERSE CODEX & BADGES MODAL OVERLAY -->
+  <div class="codex-modal-overlay hidden-element" id="codexModalOverlay" aria-hidden="true">
+    <div class="codex-modal-card glass">
+      <div class="codex-header">
+        <div class="codex-title-group">
+          <span class="codex-eyebrow">✨ MULTIVERSAL ARCHIVES</span>
+          <h2 class="codex-title">Multiverse Codex & Badges</h2>
+        </div>
+        <button type="button" class="codex-close-btn" id="closeCodexBtn" aria-label="Close Codex">✕</button>
+      </div>
+
+      <div class="codex-stats-strip" id="codexStatsStrip">
+        <div class="codex-stat-item">
+          <span class="codex-stat-val" id="codexTotalConcepts">0</span>
+          <span class="codex-stat-lbl">Concepts Learned</span>
+        </div>
+        <div class="codex-stat-item">
+          <span class="codex-stat-val" id="codexTotalBadges">0/24</span>
+          <span class="codex-stat-lbl">Badges Unlocked</span>
+        </div>
+        <div class="codex-stat-item">
+          <span class="codex-stat-val" id="codexTotalXP">0</span>
+          <span class="codex-stat-lbl">Multiverse XP</span>
+        </div>
+      </div>
+
+      <!-- Codex Modal Tabs -->
+      <div class="codex-tabs">
+        <button type="button" class="codex-tab-btn active" id="tabBadgesBtn">🏆 Badges & Achievements</button>
+        <button type="button" class="codex-tab-btn" id="tabConceptsBtn">📜 Mastered Concepts Library</button>
+      </div>
+
+      <!-- Tab 1: Badges View -->
+      <div class="codex-tab-content active" id="codexBadgesTab">
+        <div class="codex-filter-pills" id="badgeUniverseFilter">
+          <button type="button" class="filter-pill active" data-filter="all">All Universes</button>
+          <button type="button" class="filter-pill" data-filter="harrypotter">⚡ Harry Potter</button>
+          <button type="button" class="filter-pill" data-filter="marvel">🛡️ Marvel</button>
+          <button type="button" class="filter-pill" data-filter="space">🚀 Space</button>
+          <button type="button" class="filter-pill" data-filter="anime">⚔️ Anime</button>
+          <button type="button" class="filter-pill" data-filter="mythology">🔱 Mythology</button>
+          <button type="button" class="filter-pill" data-filter="pirates">🏴‍☠️ Pirates</button>
+        </div>
+        <div class="badges-grid" id="codexBadgesGrid">
+          <!-- Dynamically rendered badge cards -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Concepts View -->
+      <div class="codex-tab-content hidden-element" id="codexConceptsTab">
+        <div class="codex-filter-pills" id="conceptUniverseFilter">
+          <button type="button" class="filter-pill active" data-filter="all">All Universes</button>
+          <button type="button" class="filter-pill" data-filter="harrypotter">⚡ Harry Potter</button>
+          <button type="button" class="filter-pill" data-filter="marvel">🛡️ Marvel</button>
+          <button type="button" class="filter-pill" data-filter="space">🚀 Space</button>
+          <button type="button" class="filter-pill" data-filter="anime">⚔️ Anime</button>
+          <button type="button" class="filter-pill" data-filter="mythology">🔱 Mythology</button>
+          <button type="button" class="filter-pill" data-filter="pirates">🏴‍☠️ Pirates</button>
+        </div>
+        <div class="concepts-grid" id="codexConceptsGrid">
+          <!-- Dynamically rendered concept cards -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPT DETAIL MODAL POPUP -->
+  <div class="concept-detail-overlay hidden-element" id="conceptDetailOverlay" aria-hidden="true">
+    <div class="concept-detail-card glass">
+      <button type="button" class="concept-detail-close" id="closeConceptDetailBtn">✕</button>
+      <div class="concept-detail-body" id="conceptDetailBody">
+        <!-- Dynamically filled concept detail content -->
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="galaxy-bg.js"></script>
   <script src="app-state.js"></script>
-  <script src="app-navigation.js"></script>
   <script src="voice-engine.js"></script>
+  <script src="app-navigation.js"></script>
+  <script src="animations.js"></script>
 </body>
 </html>

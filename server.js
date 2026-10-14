@@ -30,7 +30,8 @@ const groq = new Groq({
 });
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
@@ -123,10 +124,37 @@ function validateLessonSchema(rawContent) {
 app.post('/generate', async (req, res) => {
   console.log("[ConceptVerse AI] Generate request received");
 
-  const { topic, theme, character } = req.body;
+  const { topic, theme, character, notesText } = req.body;
   console.log("[ConceptVerse AI] Theme:", theme);
   console.log("[ConceptVerse AI] Topic:", topic);
   console.log("[ConceptVerse AI] Character:", character);
+  if (notesText) console.log("[ConceptVerse AI] Notes Text length:", notesText.length);
+
+  let notesContext = "";
+  if (notesText && typeof notesText === 'string' && notesText.trim().length > 0) {
+    // Strip non-printable binary artifacts if any raw binary was sent
+    const cleanNotes = notesText
+      .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = cleanNotes.split(/\s+/);
+    const wordCount = words.length;
+    // Cap to top 800 words for optimal prompt context & fast AI generation without rate limits
+    const cappedNotes = words.slice(0, 800).join(' ');
+
+    console.log(`[ConceptVerse AI] Study Notes Mode active (${wordCount} total words, sending top 800 words)`);
+    notesContext = `
+STUDENT UPLOADED STUDY NOTES / TEXTBOOK MATERIAL:
+================================================
+${cappedNotes}
+================================================
+
+CRITICAL MANDATE FOR STUDY NOTES MODE:
+The player uploaded these study notes to master for an upcoming exam or study session!
+You MUST base the core learning puzzle, discovery beats, and quiz choice questions DIRECTLY on the concepts, definitions, facts, and formulas provided in these notes.
+Translate the specific facts from these notes into the magical, heroic, or sci-fi mechanisms of the ${theme} universe!
+`;
+  }
 
   if (!topic || !theme) {
     return res.status(400).json({
@@ -199,6 +227,10 @@ CRITICAL STORYTELLING INSTRUCTIONS — HIGH-STAKES ENSEMBLE CINEMATIC ADVENTURE:
    - Scenes branch and rejoin cleanly.
    - Keep dialogue short, snappy, and full of personality!
 
+CRITICAL JSON FORMATTING:
+- Return ONLY a valid JSON object matching the schema.
+- In JSON string values, NEVER use nested unescaped double quotes. Use single quotes for any dialogue, spoken lines, spell names, or inner quotes (e.g. 'like this', never "like this").
+
 FINAL JSON SHAPE — Return ONLY this JSON:
 {
   "mission": {
@@ -225,23 +257,7 @@ FINAL JSON SHAPE — Return ONLY this JSON:
 `;
 
   let content = null;
-
-  try {
-    let lastError = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        console.log(`[ConceptVerse AI] AI request started (attempt ${attempt})`);
-
-        const completion = await groq.chat.completions.create({
-          model: "openai/gpt-oss-120b",
-          messages: [
-            {
-              role: "system",
-              content: getSystemPrompt(theme) + "\n\n" + characterContext + "\n\n" + STORY_INSTRUCTION
-            },
-            {
-              role: "user",
-              content: `
+  const userPromptText = `
 MISSION TOPIC: ${topic}
 PLAYER SQUAD MEMBER: ${character?.name || 'Adventurer'} (Universe: ${theme})
 ${character ? `TRAITS: Power=${character.power || 'Courage'}, Weapon=${character.weapon || 'Focus'}, Role=${character.role || 'Hero'}, Personality=${Array.isArray(character.personality) ? character.personality.join(', ') : character.personality || 'Determined'}` : ''}
@@ -261,40 +277,157 @@ CRITICAL RULES:
 - The academic concept (${topic}) must serve as the real physical/magical/technological law of the world that solves the crisis.
 - Absolutely NO classroom/tutoring dialogue. Do not lecture!
 - Include active dialogue: allies coordinating with their powers, antagonists mocking, comic relief cracking jokes.
-- Return ONLY valid JSON matching the schema.
-`
-            }
+- Return ONLY valid JSON matching the schema. Use single quotes for any speech or quotes inside string values.
+`;
+
+  const systemPromptText = getSystemPrompt(theme) + "\n\n" + characterContext + (notesContext ? "\n\n" + notesContext : "") + "\n\n" + STORY_INSTRUCTION;
+
+function repairJsonString(rawStr) {
+  if (!rawStr) return null;
+
+  // Direct parse first if clean
+  try {
+    return JSON.parse(rawStr);
+  } catch (_) {}
+
+  let str = String(rawStr)
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/```json|```/g, "")
+    .trim();
+
+  try {
+    return JSON.parse(str);
+  } catch (_) {}
+
+  // Remove trailing commas before object/array closing
+  str = str.replace(/,\s*([}\]])/g, '$1');
+
+  try {
+    return JSON.parse(str);
+  } catch (_) {}
+
+  // Escape unescaped newlines inside strings
+  let sanitized = str.replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, "\\n");
+  try {
+    return JSON.parse(sanitized);
+  } catch (_) {}
+
+  // Attempt auto-closing unclosed JSON brackets/braces/quotes if response truncated
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (isEscaped) {
+      isEscaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      isEscaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (ch === '{') openBraces++;
+      else if (ch === '}') openBraces = Math.max(0, openBraces - 1);
+      else if (ch === '[') openBrackets++;
+      else if (ch === ']') openBrackets = Math.max(0, openBrackets - 1);
+    }
+  }
+
+  let repaired = str;
+  if (inString) repaired += '"';
+  while (openBrackets > 0) { repaired += ']'; openBrackets--; }
+  while (openBraces > 0) { repaired += '}'; openBraces--; }
+
+  repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+
+  try {
+    return JSON.parse(repaired);
+  } catch (err) {
+    console.warn("[ConceptVerse AI] Auto-repair attempt failed:", err.message);
+    throw err;
+  }
+}
+
+  try {
+    let lastError = null;
+    const GROQ_MODELS = [
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "qwen/qwen3.8-27b",
+      "allam-2-7b"
+    ];
+
+    for (const modelName of GROQ_MODELS) {
+      try {
+        console.log(`[ConceptVerse AI] Attempting Groq model: ${modelName}`);
+
+        const completion = await groq.chat.completions.create({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPromptText },
+            { role: "user", content: userPromptText }
           ],
           temperature: 0.5,
           max_completion_tokens: 4000,
           response_format: { type: "json_object" }
         });
 
-        console.log(`[ConceptVerse AI] AI response received (attempt ${attempt})`);
-
         const aiResponse = completion.choices[0]?.message?.content || "";
-        let cleanJson = aiResponse.replace(/ thinking[\s\S]*?<\/think>/gi, "").replace(/```json|```/g, "").trim();
-        // Light repair for the sloppiness the open model is prone to.
-        cleanJson = cleanJson
-          .replace(/[“”]/g, '"')
-          .replace(/,\s*([}\]])/g, '$1')   // trailing commas
-          .replace(/,\s*$/, '');            // dangling comma at the very end
-
-        content = JSON.parse(cleanJson);
-        console.log("[ConceptVerse AI] JSON parsing successful");
-
-        if (!validateLessonSchema(content)) {
-          throw new Error("Lesson schema missing required fields (mission, scenes, discovery, or ending)");
-        }
-        break; // success — leave the retry loop
-      } catch (attemptError) {
-        lastError = attemptError;
-        console.error(`[ConceptVerse AI] Generation failed on attempt ${attempt}:`,
-          attemptError.status ? `HTTP ${attemptError.status}: ${attemptError.message}` : (attemptError.message || attemptError));
-        // Quota exhausted — do not burn a second attempt. Fail fast with a clear message.
-        if (attemptError.status === 429 || attemptError.code === 'rate_limit_exceeded') {
+        const parsed = repairJsonString(aiResponse);
+        if (parsed && validateLessonSchema(parsed)) {
+          content = parsed;
+          console.log(`[ConceptVerse AI] Generation successful with model ${modelName}`);
           break;
+        } else {
+          console.warn(`[ConceptVerse AI] Schema validation failed for model ${modelName}`);
         }
+      } catch (err) {
+        lastError = err;
+        console.error(`[ConceptVerse AI] Model ${modelName} error:`, err.message || err);
+      }
+    }
+
+    // Fallback to OpenRouter API if Groq models fail or rate limit
+    if (!content && process.env.OPENROUTER_API_KEY) {
+      try {
+        console.log("[ConceptVerse AI] Falling back to OpenRouter API...");
+        const openrouterRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "meta-llama/llama-3.3-70b-instruct",
+            messages: [
+              { role: "system", content: systemPromptText },
+              { role: "user", content: userPromptText }
+            ],
+            response_format: { type: "json_object" }
+          })
+        });
+
+        if (!openrouterRes.ok) {
+          const errData = await openrouterRes.json().catch(() => ({}));
+          console.warn(`[ConceptVerse AI] OpenRouter fallback returned HTTP ${openrouterRes.status}:`, errData.error?.message || openrouterRes.statusText);
+        } else {
+          const openrouterData = await openrouterRes.json();
+          const aiResponse = openrouterData.choices?.[0]?.message?.content || "";
+          const parsed = repairJsonString(aiResponse);
+          if (parsed && validateLessonSchema(parsed)) {
+            content = parsed;
+            console.log("[ConceptVerse AI] OpenRouter generation successful!");
+          }
+        }
+      } catch (orErr) {
+        console.error("[ConceptVerse AI] OpenRouter fallback error:", orErr.message || orErr);
       }
     }
 

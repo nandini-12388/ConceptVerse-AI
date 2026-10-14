@@ -37,6 +37,7 @@ function initializeApp() {
     initializeConceptUnlocked();
     initializeLearnInDetail();
     initializeHub();
+    initializeCodexModal();
     
     // Listen for state changes
     document.addEventListener('stateChange', handleStateChange);
@@ -142,7 +143,10 @@ function handleStateChange(event) {
   }
 
   if (newState === 'CHARACTER_CREATION') { initializeCharacterOptions(); renderSavedCharacters(); }
-  if (newState === 'MISSION_SELECTION') updateCharacterInfoBar();
+  if (newState === 'MISSION_SELECTION') { updateCharacterInfoBar(); renderCuratedMissionCards(); }
+  if (newState === 'CINEMATIC_ADVENTURE' && window.VoiceEngine && typeof window.VoiceEngine.startAmbient === 'function') {
+    window.VoiceEngine.startAmbient(AppState.currentUniverse);
+  }
   if (newState === 'CONCEPT_UNLOCKED') populateConceptUnlocked(AppState.currentSession.conceptData);
   if (newState === 'HUB') updateHubDisplay();
 }
@@ -330,6 +334,10 @@ function selectUniverse(universeKey) {
   const universeBackground = document.getElementById('universeBackground');
   if (universeBackground) {
     universeBackground.className = `universe-background active universe-${universeKey}`;
+  }
+
+  if (window.UniverseBgEngine) {
+    window.UniverseBgEngine.setUniverse(universeKey);
   }
   
   // Navigate to character creation
@@ -1413,8 +1421,11 @@ function initializeMissionSelection() {
     });
   }
 
-  // Placeholder mission cards — guide user to use the topic input above
-  initializeMissionCards();
+  // Populate dynamic curated mission cards per universe
+  renderCuratedMissionCards();
+
+  // Initialize Study Notes Mode tab & drag-drop handling
+  initializeStudyNotesMode();
 }
 
 function updateCharacterInfoBar() {
@@ -1463,26 +1474,458 @@ function updateCharacterInfoBar() {
   }
 }
 
-function initializeMissionCards() {
-  const missionCards = document.querySelectorAll('.mission-card');
-  const missionTopicInput = document.getElementById('missionTopicInput');
+const CURATED_MISSIONS = {
+  harrypotter: [
+    {
+      icon: "🧬",
+      title: "DNA Base Pairing & Genetic Runes",
+      topic: "DNA Base Pairing",
+      category: "Biology",
+      level: "Intermediate",
+      description: "Forbidden runes in the Department of Mysteries require matching nucleic base pairs (A-T, C-G) to unseal the chamber."
+    },
+    {
+      icon: "⚡",
+      title: "Electrical Conductivity & Alchemical Circuits",
+      topic: "Electrical Conductivity",
+      category: "Physics",
+      level: "Beginner",
+      description: "Dumbledore's enchanted apparatus requires balancing metallic conductivity and resistance to stop a magical surge."
+    },
+    {
+      icon: "🌌",
+      title: "Quantum Superposition & Time-Turner Mechanics",
+      topic: "Quantum Superposition",
+      category: "Quantum Physics",
+      level: "Advanced",
+      description: "A fractured Time-Turner traps Hogwarts in overlapping quantum states. Stabilize the wave function to escape."
+    }
+  ],
+  marvel: [
+    {
+      icon: "⚛️",
+      title: "Quantum Entanglement & Subatomic Realm",
+      topic: "Quantum Entanglement",
+      category: "Quantum Physics",
+      level: "Advanced",
+      description: "Ant-Man and Iron Man need your help aligning entangled quantum particle pairs to escape the Quantum Realm."
+    },
+    {
+      icon: "🌿",
+      title: "Photosynthesis & Wakandan Bio-Energy",
+      topic: "Photosynthesis",
+      category: "Biology",
+      level: "Beginner",
+      description: "Groot and Rocket need to analyze Wakandan solar flora energy output to power shield generators during an invasion."
+    },
+    {
+      icon: "🧲",
+      title: "Electromagnetic Induction & Repulsor Coils",
+      topic: "Electromagnetic Induction",
+      category: "Physics",
+      level: "Intermediate",
+      description: "Iron Man's arc reactor conduits are overheating. Balance magnetic flux and induction currents to avert core meltdown."
+    }
+  ],
+  space: [
+    {
+      icon: "🪐",
+      title: "Gravitational Slingshot & Black Hole Orbits",
+      topic: "Gravity and Orbital Velocity",
+      category: "Astrophysics",
+      level: "Intermediate",
+      description: "The starship drive is failing near a massive singularity. Calculate gravitational acceleration to execute a warp escape."
+    },
+    {
+      icon: "🧪",
+      title: "Covalent Bonding & Oxygen Synthesis",
+      topic: "Covalent Bonding",
+      category: "Chemistry",
+      level: "Beginner",
+      description: "Ship life support requires synthesizing breathable oxygen from atmospheric compounds using covalent molecular bonding."
+    },
+    {
+      icon: "💻",
+      title: "Binary Logic & AI Neural Overdrive",
+      topic: "Binary Logic Gates",
+      category: "Computer Science",
+      level: "Intermediate",
+      description: "Ship AI klaxons trigger an automated lockdown. Realign boolean logic gates to regain bridge command."
+    }
+  ],
+  anime: [
+    {
+      icon: "🔥",
+      title: "Thermodynamics & Elemental Flame Aura",
+      topic: "Laws of Thermodynamics",
+      category: "Physics",
+      level: "Intermediate",
+      description: "Master Ren's elemental flame aura is over-expanding. Balance thermal expansion and enthalpy to master heat control."
+    },
+    {
+      icon: "🧬",
+      title: "Cellular Respiration & Ki Surge",
+      topic: "Cellular Respiration",
+      category: "Biology",
+      level: "Beginner",
+      description: "Unlock your inner spirit awakening by accelerating ATP energy production inside cellular mitochondria."
+    },
+    {
+      icon: "📐",
+      title: "Vector Mathematics & Kinetic Strikes",
+      topic: "Vector Components",
+      category: "Mathematics",
+      level: "Intermediate",
+      description: "Calculate vector force components and trajectory angles to break through the enemy's spirit barrier."
+    }
+  ],
+  mythology: [
+    {
+      icon: "🌌",
+      title: "Cosmic Gravitational Waves & Loka Balance",
+      topic: "Gravitational Waves",
+      category: "Cosmic Physics",
+      level: "Advanced",
+      description: "Lord Shiva's cosmic Tandava vibrates celestial Lokas. Balance gravitational harmonic waves to restore cosmic order."
+    },
+    {
+      icon: "🌊",
+      title: "Fluid Dynamics & Samudra Manthan Vortex",
+      topic: "Fluid Viscosity and Turbulence",
+      category: "Physics",
+      level: "Intermediate",
+      description: "Sage Narada guides the squad through ocean churning. Master fluid viscosity and vortex pressure to extract nectar."
+    },
+    {
+      icon: "🌿",
+      title: "Plant Mitosis & Sanjeevani Healing",
+      topic: "Cellular Mitosis",
+      category: "Biology",
+      level: "Beginner",
+      description: "Rejuvenate sacred Sanjeevani herbs on Mount Dronagiri by accelerating cellular mitosis and plant regeneration."
+    }
+  ],
+  pirates: [
+    {
+      icon: "🧭",
+      title: "Celestial Navigation & Star Triangulation",
+      topic: "Spherical Trigonometry",
+      category: "Astronomy",
+      level: "Beginner",
+      description: "Captain Redbeard navigates cursed whirlpools using star constellations and spherical trigonometry."
+    },
+    {
+      icon: "💣",
+      title: "Gas Laws & Powder Keg Pressure",
+      topic: "Ideal Gas Law",
+      category: "Chemistry",
+      level: "Intermediate",
+      description: "Broadside cannons misfire in humid sea air. Adjust pressure, volume, and temperature equations to clear guns."
+    },
+    {
+      icon: "⚖️",
+      title: "Buoyancy & Archimedes Principle",
+      topic: "Archimedes Principle",
+      category: "Physics",
+      level: "Beginner",
+      description: "A treasure galleon is taking on water. Balance fluid displacement and density to prevent sinking!"
+    }
+  ]
+};
 
-  // Placeholder cards now guide the user to the topic input instead of
-  // navigating directly (which would open the adventure with no data)
-  missionCards.forEach(card => {
+function renderCuratedMissionCards() {
+  const grid = document.getElementById('missionCardsGrid');
+  const input = document.getElementById('missionTopicInput');
+  if (!grid) return;
+
+  const currentU = AppState.currentUniverse || 'harrypotter';
+  const missions = CURATED_MISSIONS[currentU] || CURATED_MISSIONS.harrypotter;
+
+  let html = '';
+  missions.forEach(m => {
+    html += `
+      <div class="mission-card glass curated-mission-card" data-topic="${escapeHtml(m.topic)}">
+        <div class="mission-card-header">
+          <span class="mission-card-icon">${m.icon}</span>
+          <span class="mission-card-badge">${escapeHtml(m.category)} • ${escapeHtml(m.level)}</span>
+        </div>
+        <h4 class="mission-card-title">${escapeHtml(m.title)}</h4>
+        <p class="mission-card-desc">${escapeHtml(m.description)}</p>
+        <button type="button" class="mission-card-launch-btn">Launch Mission 🚀</button>
+      </div>
+    `;
+  });
+
+  // Custom Topic Card
+  html += `
+    <div class="mission-card glass curated-mission-card custom-topic-card">
+      <div class="mission-card-header">
+        <span class="mission-card-icon">✨</span>
+        <span class="mission-card-badge">Custom Topic</span>
+      </div>
+      <h4 class="mission-card-title">Custom Topic Mission</h4>
+      <p class="mission-card-desc">Type any custom topic above (e.g., Photosynthesis, Black Holes, Fractions) to generate an instant custom adventure!</p>
+      <button type="button" class="mission-card-launch-btn secondary" id="customCardFocusBtn">Type Custom Topic ✍️</button>
+    </div>
+  `;
+
+  grid.innerHTML = html;
+
+  // Add click listeners to launch curated missions instantly
+  grid.querySelectorAll('.curated-mission-card:not(.custom-topic-card)').forEach(card => {
     card.addEventListener('click', () => {
-      showToast('Enter a topic above and press Start Mission!');
-      missionTopicInput?.focus();
+      const topic = card.dataset.topic;
+      if (topic) {
+        if (input) input.value = topic;
+        if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+          window.VoiceEngine.playSfx('choice');
+        }
+        launchMission(topic);
+      }
     });
   });
+
+  const focusBtn = grid.querySelector('#customCardFocusBtn');
+  if (focusBtn) {
+    focusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+}
+
+/* =========================================================
+   Study Notes Mode Initialization & File Uploader
+   ========================================================= */
+
+function initializeStudyNotesMode() {
+  const tabQuickTopic = document.getElementById('tabQuickTopic');
+  const tabStudyNotes = document.getElementById('tabStudyNotes');
+  const panelQuickTopic = document.getElementById('panelQuickTopic');
+  const panelStudyNotes = document.getElementById('panelStudyNotes');
+
+  const notesDropZone = document.getElementById('notesDropZone');
+  const notesFileInput = document.getElementById('notesFileInput');
+  const browseNotesBtn = document.getElementById('browseNotesBtn');
+  const notesTextInput = document.getElementById('notesTextInput');
+  const notesStatsBadge = document.getElementById('notesStatsBadge');
+  const notesStatsText = document.getElementById('notesStatsText');
+  const startNotesMissionBtn = document.getElementById('startNotesMissionBtn');
+
+  let activeNotesText = '';
+  let activeFileName = '';
+
+  function switchTab(mode) {
+    if (mode === 'notes') {
+      tabQuickTopic?.classList.remove('active');
+      tabQuickTopic?.setAttribute('aria-selected', 'false');
+      tabStudyNotes?.classList.add('active');
+      tabStudyNotes?.setAttribute('aria-selected', 'true');
+
+      panelQuickTopic?.classList.add('hidden-element');
+      panelStudyNotes?.classList.remove('hidden-element');
+    } else {
+      tabStudyNotes?.classList.remove('active');
+      tabStudyNotes?.setAttribute('aria-selected', 'false');
+      tabQuickTopic?.classList.add('active');
+      tabQuickTopic?.setAttribute('aria-selected', 'true');
+
+      panelStudyNotes?.classList.add('hidden-element');
+      panelQuickTopic?.classList.remove('hidden-element');
+    }
+  }
+
+  if (tabQuickTopic) tabQuickTopic.addEventListener('click', () => switchTab('quick'));
+  if (tabStudyNotes) tabStudyNotes.addEventListener('click', () => switchTab('notes'));
+
+  // Browse file button
+  if (browseNotesBtn && notesFileInput) {
+    browseNotesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notesFileInput.click();
+    });
+  }
+
+  if (notesDropZone && notesFileInput) {
+    notesDropZone.addEventListener('click', () => notesFileInput.click());
+
+    notesDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      notesDropZone.classList.add('is-drag-over');
+    });
+    notesDropZone.addEventListener('dragleave', () => {
+      notesDropZone.classList.remove('is-drag-over');
+    });
+    notesDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      notesDropZone.classList.remove('is-drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (notesFileInput) {
+    notesFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  function updateNotesStats(text, sourceName) {
+    activeNotesText = text || '';
+    activeFileName = sourceName || '';
+
+    const words = activeNotesText.trim() ? activeNotesText.trim().split(/\s+/).length : 0;
+
+    if (words > 0) {
+      if (notesStatsBadge) notesStatsBadge.classList.remove('hidden-element');
+      if (notesStatsText) {
+        notesStatsText.textContent = `${sourceName ? sourceName + ' • ' : ''}${words} words loaded`;
+      }
+    } else {
+      if (notesStatsBadge) notesStatsBadge.classList.add('hidden-element');
+    }
+  }
+
+  async function extractPdfText(file) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      if (window.pdfjsLib) {
+        // Disable worker to avoid cross-origin CDN CORS issues
+        if (window.pdfjsLib.GlobalWorkerOptions) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+        const loadingTask = window.pdfjsLib.getDocument({
+          data: arrayBuffer,
+          disableWorker: true,
+          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/',
+          cMapPacked: true
+        });
+        const pdf = await loadingTask.promise;
+        let extractedText = '';
+        const maxPages = Math.min(pdf.numPages, 40);
+
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          extractedText += pageText + '\n\n';
+        }
+
+        // Clean out any leftover PDF formatting codes
+        let cleaned = extractedText
+          .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+          .replace(/%PDF-\d\.\d[\s\S]*?obj/g, ' ')
+          .replace(/endobj|endstream|stream/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        return cleaned;
+      } else {
+        const raw = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+        const cleaned = raw.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/%PDF[\s\S]*?obj/g, ' ').replace(/\s+/g, ' ').trim();
+        return cleaned;
+      }
+    } catch (err) {
+      console.warn('[ConceptVerse] PDF text extraction failed:', err);
+      return '';
+    }
+  }
+
+  async function handleFileSelect(file) {
+    if (!file) return;
+
+    showToast(`⏳ Extracting text from ${file.name}...`);
+
+    const filename = file.name || 'document';
+    const ext = filename.split('.').pop().toLowerCase();
+
+    let textContent = '';
+
+    if (ext === 'pdf') {
+      textContent = await extractPdfText(file);
+    } else {
+      try {
+        const raw = await file.text();
+        textContent = raw.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+      } catch (e) {
+        showToast('⚠️ Could not read file. Please try pasting text directly.');
+        return;
+      }
+    }
+
+    // Guard against binary PDF leftover codes
+    if (textContent.includes('%PDF-') || textContent.includes('obj') && textContent.length < 50) {
+      showToast('⚠️ This PDF appears to be a scanned image or protected document. Please paste the text notes directly.');
+      if (notesTextInput) notesTextInput.value = '';
+      updateNotesStats('', filename);
+      return;
+    }
+
+    if (!textContent || textContent.length < 15) {
+      showToast('⚠️ Could not extract text from this file. Please paste text directly into the box.');
+      if (notesTextInput) notesTextInput.value = '';
+      updateNotesStats('', filename);
+      return;
+    }
+
+    if (notesTextInput) notesTextInput.value = textContent;
+    updateNotesStats(textContent, filename);
+    showToast(`✅ Loaded ${filename}! (${textContent.split(/\s+/).length} words)`);
+  }
+
+  if (notesTextInput) {
+    notesTextInput.addEventListener('input', () => {
+      updateNotesStats(notesTextInput.value, activeFileName || 'Pasted Notes');
+    });
+  }
+
+  if (startNotesMissionBtn) {
+    startNotesMissionBtn.addEventListener('click', () => {
+      const text = notesTextInput?.value.trim() || activeNotesText.trim();
+      if (!text) {
+        showToast('⚠️ Please upload a file or paste your study notes first!');
+        notesTextInput?.focus();
+        return;
+      }
+
+      // Generate a clean topic title from file name or clean lines
+      let topicTitle = '';
+      if (activeFileName && activeFileName !== 'Pasted Notes') {
+        topicTitle = activeFileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
+      }
+
+      if (!topicTitle || topicTitle.length < 3) {
+        const cleanLines = text.split('\n')
+          .map(l => l.replace(/[#*`_%]/g, '').trim())
+          .filter(l => l.length > 5 && !l.startsWith('PDF') && !l.includes('obj'));
+        topicTitle = cleanLines[0] || `Study Notes (${text.split(/\s+/).slice(0, 3).join(' ')})`;
+      }
+
+      // Final cleanup of topic title
+      topicTitle = topicTitle.replace(/%PDF[^\s]*/gi, '').replace(/[^\x20-\x7E]/g, '').trim() || 'Custom Study Notes';
+
+      if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+        window.VoiceEngine.playSfx('ability');
+      }
+
+      launchMission(topicTitle, text);
+    });
+  }
 }
 
 /* =========================================================
    Mission Generation — POST /generate
    ========================================================= */
 
-async function launchMission(topic) {
+async function launchMission(topic, notesText = null) {
   const startMissionBtn = document.getElementById('startMissionBtn');
+  const startNotesMissionBtn = document.getElementById('startNotesMissionBtn');
   const missionLoadingState = document.getElementById('missionLoadingState');
 
   // --- Loading state ---
@@ -1490,9 +1933,13 @@ async function launchMission(topic) {
     startMissionBtn.disabled = true;
     startMissionBtn.textContent = 'Generating…';
   }
+  if (startNotesMissionBtn) {
+    startNotesMissionBtn.disabled = true;
+    startNotesMissionBtn.textContent = 'Creating Notes Quest…';
+  }
   if (missionLoadingState) missionLoadingState.style.display = 'block';
 
-  AppState.startSession({ topic });
+  AppState.startSession({ topic, notesText });
 
   try {
     const response = await fetch('/generate', {
@@ -1500,6 +1947,7 @@ async function launchMission(topic) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         topic,
+        notesText,
         theme: AppState.currentUniverse,
         character: AppState.character
       })
@@ -1525,10 +1973,14 @@ async function launchMission(topic) {
     console.error('[ConceptVerse] Generation request failed:', error);
     showToast('⚠️ Could not reach the server. Is it running?');
   } finally {
-    // Always restore the button
+    // Always restore the buttons
     if (startMissionBtn) {
       startMissionBtn.disabled = false;
       startMissionBtn.textContent = 'Start Mission →';
+    }
+    if (startNotesMissionBtn) {
+      startNotesMissionBtn.disabled = false;
+      startNotesMissionBtn.textContent = '🚀 Convert Notes into Quest →';
     }
     if (missionLoadingState) missionLoadingState.style.display = 'none';
   }
@@ -2018,6 +2470,29 @@ function renderCompactCast(scene, lesson) {
   });
 }
 
+function getCharacterEmoji(who, universeKey) {
+  if (!who) return '✨';
+  const name = String(who).toLowerCase();
+  if (name.includes('nova')) return '🚀';
+  if (name.includes('vega')) return '📜';
+  if (name.includes('bolt')) return '⚡';
+  if (name.includes('astra')) return '🤖';
+  if (name.includes('stark') || name.includes('iron')) return '🦾';
+  if (name.includes('fury')) return '🕶️';
+  if (name.includes('spider') || name.includes('peter')) return '🕷️';
+  if (name.includes('dumbledore')) return '🧙‍♂️';
+  if (name.includes('hermione')) return '🪄';
+  if (name.includes('ron')) return '🧹';
+  if (name.includes('malfoy')) return '🐍';
+  if (name.includes('redbeard')) return '🏴‍☠️';
+  if (name.includes('boomer')) return '💣';
+  if (name.includes('ren') || name.includes('master')) return '🥋';
+  if (name.includes('kai')) return '🔥';
+  if (name.includes('narada')) return '🔱';
+  if (name.includes('shiva')) return '🔱';
+  return '🎭';
+}
+
 function renderSceneStoryChronicle(scene, lesson, idx) {
   const beatsFlow = document.getElementById('storyBeatsFlow');
   const actionArea = document.getElementById('storyActionArea');
@@ -2085,7 +2560,7 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
         roleBadgeHtml = '<span class="beat-role-badge beat-role-badge--player">⭐ Hero</span>';
       } else {
         const npc = npcs.find(n => n.name.toLowerCase() === lwho || n.name.toLowerCase().includes(lwho) || lwho.includes(n.name.toLowerCase()));
-        avatar = npc?.emoji || (who ? who.charAt(0).toUpperCase() : '✨');
+        avatar = npc?.emoji || getCharacterEmoji(who, uni);
         if (npc) name = npc.name;
 
         if (role === 'rival') {
@@ -2115,6 +2590,8 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
     } else if (b.t === 'action') {
       const beatEl = document.createElement('div');
       beatEl.className = 'story-beat story-beat--action story-beat--narration';
+      beatEl.dataset.t = 'action';
+      if (b.fx) beatEl.dataset.fx = String(b.fx);
       const rawText = (b.text || b.what || '').trim();
       const actorName = isLearner ? learnerName : (who || '');
       const startsWithPronoun = /^(he|she|they|it)\b/i.test(rawText);
@@ -2146,6 +2623,8 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
     } else {
       const beatEl = document.createElement('div');
       beatEl.className = 'story-beat story-beat--narration';
+      beatEl.dataset.t = b.t || 'narration';
+      if (b.fx) beatEl.dataset.fx = String(b.fx);
       const icon = b.t === 'env' ? '🌍' : '📜';
       beatEl.innerHTML = `
         <div class="beat-narration-icon">${icon}</div>
@@ -2173,25 +2652,79 @@ function renderSceneStoryChronicle(scene, lesson, idx) {
   }
 }
 
+function getCharacterAbilityName() {
+  const char = AppState.character || {};
+  const uni = AppState.currentUniverse || 'harrypotter';
+  const ABILITIES = {
+    harrypotter: "Hermione's Revelio Spell 🪄",
+    marvel: "Stark Nanotech Telemetry 🦾",
+    space: "Captain Nova's Scanner Sweep 🚀",
+    anime: "Master Ren's Ki Focus ⚔️",
+    mythology: "Shiva's Divya Drishti 🔱",
+    pirates: "Captain Redbeard's Instinct 🏴‍☠️"
+  };
+  return char.power ? `✨ ${char.power}` : (ABILITIES[uni] || "✨ Tactical Scan");
+}
+
 function renderChronicleChoice(choiceBeat, scene, lesson) {
   const actionArea = document.getElementById('storyActionArea');
   if (!actionArea) return;
 
   const card = document.createElement('div');
   card.className = 'story-decision-card';
+
+  const abilityName = getCharacterAbilityName();
+  const abilityUsed = !!(AppState.currentSession && AppState.currentSession.abilityUsed);
+
   card.innerHTML = `
     <div class="decision-badge">Your Decision / Next Move</div>
+    <div class="ability-action-bar">
+      <button type="button" class="ability-trigger-btn" id="abilityTriggerBtn" ${abilityUsed ? 'disabled' : ''}>
+        <span>${abilityUsed ? '✨ Ability Spent This Adventure' : `Activate Ability: <strong>${escapeHtml(abilityName)}</strong>`}</span>
+        <span class="ability-tag">${abilityUsed ? '0/1 Charges' : '1 Charge Available'}</span>
+      </button>
+    </div>
     <div class="decision-question">${escapeHtml(choiceBeat.text || 'What do you choose to do next?')}</div>
     <div class="decision-options" id="chronicleDecisionOptions"></div>
   `;
   actionArea.appendChild(card);
+
+  const abilityBtn = card.querySelector('#abilityTriggerBtn');
+  if (abilityBtn && !abilityUsed) {
+    abilityBtn.addEventListener('click', () => {
+      if (!AppState.currentSession) AppState.currentSession = {};
+      AppState.currentSession.abilityUsed = true;
+      abilityBtn.disabled = true;
+      abilityBtn.innerHTML = `<span>✨ <strong>${escapeHtml(abilityName)}</strong> Active!</span> <span class="ability-tag">0 Charges</span>`;
+
+      if (window.VoiceEngine) {
+        if (typeof window.VoiceEngine.playSfx === 'function') window.VoiceEngine.playSfx('ability');
+        if (typeof window.VoiceEngine.triggerSparkle === 'function') window.VoiceEngine.triggerSparkle(abilityBtn);
+      }
+
+      const optBtns = card.querySelectorAll('.decision-option-btn');
+      let eliminated = 0;
+      choiceBeat.options.forEach((opt, idx) => {
+        if (!opt.isCorrect && eliminated < 2 && optBtns[idx]) {
+          optBtns[idx].classList.add('ability-disabled-opt');
+          eliminated++;
+        }
+      });
+      showToast(`✨ ${abilityName} isolated ${eliminated} flawed option(s)!`);
+    });
+  }
 
   const optsContainer = card.querySelector('#chronicleDecisionOptions');
   choiceBeat.options.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'decision-option-btn';
     btn.innerHTML = `<span class="decision-opt-bullet">▶</span> <span>${escapeHtml(opt.text)}</span>`;
-    btn.addEventListener('click', () => handleChronicleChoice(opt, card, scene, lesson));
+    btn.addEventListener('click', () => {
+      if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+        window.VoiceEngine.playSfx('choice');
+      }
+      handleChronicleChoice(opt, card, scene, lesson);
+    });
     optsContainer.appendChild(btn);
   });
 }
@@ -2203,6 +2736,10 @@ function handleChronicleChoice(opt, card, scene, lesson) {
   const xp = opt.isCorrect ? 100 : 25;
   AppState.addPoints(xp);
   showToast(opt.isCorrect ? `✅ +${xp} XP` : `💡 +${xp} XP`);
+
+  if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+    window.VoiceEngine.playSfx(opt.isCorrect ? 'correct' : 'wrong');
+  }
 
   const ap = document.getElementById('adventurePoints');
   if (ap) ap.textContent = AppState.userProgress.points;
@@ -2710,6 +3247,16 @@ function populateConceptUnlocked(lesson) {
     CharacterStore.save(AppState.character, uProg);
   }
 
+  // Save full concept into Multiverse Codex Store
+  if (typeof CodexStore !== 'undefined' && typeof CodexStore.saveConcept === 'function') {
+    CodexStore.saveConcept(lesson, currentU);
+  }
+
+  // Sound Effect
+  if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+    window.VoiceEngine.playSfx('badge');
+  }
+
   const d = lesson.discovery || {};
   const title = document.getElementById('conceptTitle');
   const short = document.getElementById('conceptShortExplanation');
@@ -2725,6 +3272,14 @@ function populateConceptUnlocked(lesson) {
   }
   // Update reward badge display
   if (rewardPoints) rewardPoints.textContent = `+100 ${uName} Points`;
+
+  // Render Interactive Canvas Visualizer Widget
+  const canvasEl = document.getElementById('conceptCanvas');
+  if (canvasEl && typeof initConceptVisualizerCanvas === 'function') {
+    setTimeout(() => {
+      initConceptVisualizerCanvas(canvasEl, d.title || 'Key Concept', currentU);
+    }, 120);
+  }
 }
 
 /* =========================================================
@@ -3076,4 +3631,949 @@ function showToast(message) {
   toastTimer = setTimeout(() => {
     toast.classList.remove('is-visible');
   }, 3200);
+}
+
+/* =========================================================
+   Multiverse Codex Storage & Concept Archives
+   ========================================================= */
+
+const CodexStore = {
+  KEY: 'cv.codex.v1',
+
+  read() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || []; }
+    catch (_) { return []; }
+  },
+
+  write(list) {
+    try { localStorage.setItem(this.KEY, JSON.stringify(list)); }
+    catch (_) {}
+  },
+
+  saveConcept(lesson, universeKey) {
+    if (!lesson || !lesson.discovery || !lesson.discovery.title) return;
+    const list = this.read();
+    const title = lesson.discovery.title;
+    const uKey = universeKey || AppState.currentUniverse || 'harrypotter';
+    const key = uKey + '|' + title.trim().toLowerCase();
+    const existingIndex = list.findIndex(item => (item.universe + '|' + item.title.trim().toLowerCase()) === key);
+
+    const item = {
+      id: existingIndex >= 0 ? list[existingIndex].id : 'concept_' + Date.now().toString(36),
+      title: title.trim(),
+      universe: uKey,
+      summary: lesson.discovery.text || '',
+      explanation: Array.isArray(lesson.details?.explanation) ? lesson.details.explanation.join(' ') : (lesson.details?.explanation || ''),
+      realWorld: Array.isArray(lesson.details?.realWorld) ? lesson.details.realWorld : [],
+      unlockedAt: new Date().toISOString()
+    };
+
+    if (existingIndex >= 0) {
+      list[existingIndex] = item;
+    } else {
+      list.unshift(item);
+    }
+    this.write(list);
+  },
+
+  getConcepts(universeFilter) {
+    const list = this.read();
+    if (!universeFilter || universeFilter === 'all') return list;
+    return list.filter(item => item.universe === universeFilter);
+  }
+};
+
+/* =========================================================
+   Interactive Concept Visualizer Widget Canvas Engine
+   ========================================================= */
+
+function initConceptVisualizerCanvas(canvasEl, conceptTitle, themeKey) {
+  if (!canvasEl) return;
+  const ctx = canvasEl.getContext('2d');
+  if (!ctx) return;
+
+  // Cancel any previous animation loop running on this canvas
+  if (canvasEl._animFrameId) {
+    cancelAnimationFrame(canvasEl._animFrameId);
+    canvasEl._animFrameId = null;
+  }
+
+  const rect = canvasEl.getBoundingClientRect();
+  canvasEl.width = rect.width || 600;
+  canvasEl.height = rect.height || 220;
+
+  const width = canvasEl.width;
+  const height = canvasEl.height;
+
+  // Normalize universe theme key
+  const tk = (themeKey || '').toLowerCase();
+  let theme = 'harrypotter';
+  if (tk.includes('marvel')) theme = 'marvel';
+  else if (tk.includes('space')) theme = 'space';
+  else if (tk.includes('anime')) theme = 'anime';
+  else if (tk.includes('myth')) theme = 'mythology';
+  else if (tk.includes('pirate')) theme = 'pirates';
+
+  const paletteMap = {
+    harrypotter: ['#7c5cff', '#ffd700', '#9b7edd', '#00f2fe', '#e0aaff'],
+    marvel: ['#00f2fe', '#ff4d5e', '#ffd700', '#3a86ff', '#ffffff'],
+    space: ['#00ffff', '#3fd4ff', '#7c5cff', '#ff6b35', '#b5179e'],
+    mythology: ['#ff9933', '#ffd166', '#4ade80', '#e0aaff', '#ffd700'],
+    pirates: ['#ffb340', '#ffc566', '#00f2fe', '#8b4513', '#ffffff'],
+    anime: ['#ff6fd8', '#00ffff', '#ffd700', '#ff4d5e', '#a855f7']
+  };
+
+  const palette = paletteMap[theme] || paletteMap.harrypotter;
+
+  // Mouse tracking
+  let mouseX = width / 2;
+  let mouseY = height / 2;
+  let isHovered = false;
+
+  canvasEl.onmousemove = (e) => {
+    const r = canvasEl.getBoundingClientRect();
+    mouseX = e.clientX - r.left;
+    mouseY = e.clientY - r.top;
+    isHovered = true;
+  };
+
+  canvasEl.onmouseleave = () => {
+    isHovered = false;
+  };
+
+  // Spark burst effect on click
+  let bursts = [];
+  canvasEl.onclick = () => {
+    if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+      window.VoiceEngine.playSfx('choice');
+    }
+    for (let i = 0; i < 18; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 4 + 1.5;
+      bursts.push({
+        x: mouseX,
+        y: mouseY,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        size: Math.random() * 4 + 2,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        life: 1.0
+      });
+    }
+  };
+
+  // Build theme-specific particle structures
+  let particles = [];
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  if (theme === 'harrypotter') {
+    // 45 Magic Rune Sparkles & Spell Dust
+    for (let i = 0; i < 45; i++) {
+      particles.push({
+        angle: Math.random() * Math.PI * 2,
+        radius: 20 + Math.random() * 85,
+        speed: (Math.random() * 0.02 + 0.005) * (i % 2 === 0 ? 1 : -1),
+        size: Math.random() * 3 + 1,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        pulse: Math.random() * Math.PI,
+        sparkle: Math.random() > 0.3
+      });
+    }
+  } else if (theme === 'marvel') {
+    // 40 Cyber Tech Data Nodes
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        dist: 30 + Math.random() * 80,
+        angle: (i / 40) * Math.PI * 2,
+        speed: (Math.random() * 0.015 + 0.008) * (i % 2 === 0 ? 1 : -1),
+        size: Math.random() * 3.5 + 1.5,
+        color: palette[i % palette.length],
+        pulse: Math.random() * Math.PI
+      });
+    }
+  } else if (theme === 'space') {
+    // 50 Spiral Galaxy Stars & Orbiters
+    for (let i = 0; i < 50; i++) {
+      const arm = i % 2;
+      const armAngle = arm * Math.PI;
+      const distance = 15 + Math.random() * 85;
+      particles.push({
+        dist: distance,
+        angle: armAngle + (distance / 85) * Math.PI * 1.8 + Math.random() * 0.4,
+        speed: (0.015 + (1 / (distance + 10)) * 0.5),
+        size: Math.random() * 2.8 + 1,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        pulse: Math.random() * Math.PI
+      });
+    }
+  } else if (theme === 'mythology') {
+    // 35 Sacred Lotus Orbs & Solar Sparks
+    for (let i = 0; i < 35; i++) {
+      particles.push({
+        x: centerX + (Math.random() - 0.5) * 140,
+        y: centerY + (Math.random() - 0.5) * 80,
+        vy: -(Math.random() * 0.8 + 0.3),
+        vx: (Math.random() - 0.5) * 0.4,
+        size: Math.random() * 3.5 + 1.5,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        pulse: Math.random() * Math.PI,
+        baseY: centerY + 40
+      });
+    }
+  } else if (theme === 'pirates') {
+    // 40 Wave Glints & Foam Drops
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        angle: Math.random() * Math.PI * 2,
+        radius: 25 + Math.random() * 80,
+        speed: Math.random() * 0.018 + 0.006,
+        size: Math.random() * 3 + 1,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        pulse: Math.random() * Math.PI,
+        bob: Math.random() * Math.PI * 2
+      });
+    }
+  } else if (theme === 'anime') {
+    // 40 Sakura Petals & Energy Sparks
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        speedY: Math.random() * 1.2 + 0.5,
+        speedX: Math.random() * 0.8 - 0.4,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: Math.random() * 0.04 - 0.02,
+        size: Math.random() * 4 + 2,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        isSakura: i < 22
+      });
+    }
+  }
+
+  let startTime = Date.now();
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+
+    const time = (Date.now() - startTime) * 0.002;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // Render Click Bursts
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i];
+      b.x += b.vx;
+      b.y += b.vy;
+      b.life -= 0.03;
+      if (b.life <= 0) {
+        bursts.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = b.color;
+      ctx.globalAlpha = b.life;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size * b.life, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    }
+
+    // ==========================================
+    // 1. HARRY POTTER: Golden Snitch & Rune Rings
+    // ==========================================
+    if (theme === 'harrypotter') {
+      // Rotating magic rune rings
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Ring 1 (Inner clockwise)
+      ctx.strokeStyle = 'rgba(124, 92, 255, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([12, 18]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 68, time * 0.5, time * 0.5 + Math.PI * 2);
+      ctx.stroke();
+
+      // Ring 2 (Outer golden counter-clockwise)
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 10]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 88, -time * 0.4, -time * 0.4 + Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Golden Snitch Center
+      const wingFlap = Math.sin(time * 14) * 12;
+
+      // Golden Glow
+      const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, 55);
+      grad.addColorStop(0, '#ffd700');
+      grad.addColorStop(0.5, 'rgba(255, 180, 0, 0.4)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 55, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fluttering Wings (Left & Right)
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Left Wing
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(-10, -2);
+      ctx.bezierCurveTo(-35, -25 + wingFlap, -60, -10 + wingFlap, -50, 5);
+      ctx.bezierCurveTo(-35, 0, -20, -2, -10, -2);
+      ctx.fill();
+
+      // Right Wing
+      ctx.beginPath();
+      ctx.moveTo(10, -2);
+      ctx.bezierCurveTo(35, -25 + wingFlap, 60, -10 + wingFlap, 50, 5);
+      ctx.bezierCurveTo(35, 0, 20, -2, 10, -2);
+      ctx.fill();
+
+      // Snitch Core Sphere
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Metallic highlight
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-4, -4, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Render Spell Particles
+      particles.forEach(p => {
+        p.angle += p.speed;
+        p.pulse += 0.05;
+        const px = cx + Math.cos(p.angle) * p.radius;
+        const py = cy + Math.sin(p.angle) * (p.radius * 0.55);
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        const sz = p.size + (p.sparkle ? Math.sin(p.pulse) * 1.2 : 0);
+        ctx.arc(px, py, Math.max(0.5, sz), 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isHovered && Math.hypot(px - mouseX, py - mouseY) < 55) {
+          ctx.strokeStyle = '#ffd700';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(mouseX, mouseY);
+          ctx.stroke();
+        }
+      });
+    }
+
+    // ==========================================
+    // 2. MARVEL: Stark Arc Reactor & Tech HUD
+    // ==========================================
+    else if (theme === 'marvel') {
+      // Tech Grid Radial Glow
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 75);
+      grad.addColorStop(0, 'rgba(0, 242, 254, 0.8)');
+      grad.addColorStop(0.5, 'rgba(0, 150, 255, 0.25)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Rotating Outer Target Ring with 12 ticks
+      ctx.strokeStyle = '#00f2fe';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 70, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + time * 0.6;
+        const x1 = Math.cos(a) * 64;
+        const y1 = Math.sin(a) * 64;
+        const x2 = Math.cos(a) * 76;
+        const y2 = Math.sin(a) * 76;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      // Inner Arc Reactor Triangular Core
+      ctx.rotate(-time * 0.8);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        const r = 24;
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Pulsing Center Core
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 8 + Math.sin(time * 6) * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Cyber Data Particles
+      particles.forEach(p => {
+        p.angle += p.speed;
+        const px = cx + Math.cos(p.angle) * p.dist;
+        const py = cy + Math.sin(p.angle) * (p.dist * 0.6);
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Hover Crosshair HUD Target
+      if (isHovered) {
+        ctx.strokeStyle = '#ff4d5e';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mouseX, mouseY, 14, 0, Math.PI * 2);
+        ctx.moveTo(mouseX - 20, mouseY); ctx.lineTo(mouseX + 20, mouseY);
+        ctx.moveTo(mouseX, mouseY - 20); ctx.lineTo(mouseX, mouseY + 20);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0, 242, 254, 0.5)';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(mouseX, mouseY);
+        ctx.stroke();
+      }
+    }
+
+    // ==========================================
+    // 3. SPACE: Cosmic Singularity & Spiral Galaxy
+    // ==========================================
+    else if (theme === 'space') {
+      // Black Hole Event Horizon Core
+      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, 70);
+      grad.addColorStop(0, '#000000');
+      grad.addColorStop(0.3, '#10002b');
+      grad.addColorStop(0.65, 'rgba(0, 255, 255, 0.6)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 70, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Singularity Ring
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Swirling Spiral Galaxy Particles
+      particles.forEach(p => {
+        p.angle += p.speed;
+        const px = cx + Math.cos(p.angle) * p.dist;
+        const py = cy + Math.sin(p.angle) * (p.dist * 0.45);
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Gravitational Lensing on Hover
+        if (isHovered) {
+          const d = Math.hypot(px - mouseX, py - mouseY);
+          if (d < 65) {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(mouseX, mouseY);
+            ctx.stroke();
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // 4. MYTHOLOGY: Sacred Golden Lotus / Chakra
+    // ==========================================
+    else if (theme === 'mythology') {
+      // Golden Sunburst Background Glow
+      const grad = ctx.createRadialGradient(cx, cy, 8, cx, cy, 75);
+      grad.addColorStop(0, '#ffd166');
+      grad.addColorStop(0.5, 'rgba(255, 153, 51, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 12 Golden Lotus Petals
+      const petalCount = 12;
+      const lotusScale = 1 + Math.sin(time * 2) * 0.06;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(time * 0.2);
+
+      for (let i = 0; i < petalCount; i++) {
+        const angle = (i / petalCount) * Math.PI * 2;
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.fillStyle = (i % 2 === 0) ? '#ff9933' : '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(15 * lotusScale, 25 * lotusScale, 0, 48 * lotusScale);
+        ctx.quadraticCurveTo(-15 * lotusScale, 25 * lotusScale, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Lotus Center Core
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Ascending Temple Sparks
+      particles.forEach(p => {
+        p.y += p.vy;
+        p.x += p.vx + Math.sin(time + p.pulse) * 0.3;
+
+        if (p.y < cy - 90) {
+          p.y = p.baseY;
+          p.x = cx + (Math.random() - 0.5) * 120;
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // ==========================================
+    // 5. PIRATES: Compass Rose & Ocean Wave Needle
+    // ==========================================
+    else if (theme === 'pirates') {
+      // Ocean Blue Glow
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 75);
+      grad.addColorStop(0, 'rgba(255, 179, 64, 0.7)');
+      grad.addColorStop(0.5, 'rgba(0, 242, 254, 0.2)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ocean Wave Ripples
+      for (let r = 0; r < 3; r++) {
+        const waveR = ((time * 30 + r * 25) % 85) + 10;
+        const alpha = Math.max(0, 1 - waveR / 90);
+        ctx.strokeStyle = `rgba(0, 242, 254, ${alpha * 0.4})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, waveR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Compass Needle Angle (Targeting Mouse)
+      const targetAngle = Math.atan2(mouseY - cy, mouseX - cx);
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // 8-Point Compass Rose Dial
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const len = (i % 2 === 0) ? 42 : 26;
+        ctx.strokeStyle = '#ffb340';
+        ctx.lineWidth = (i % 2 === 0) ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+        ctx.stroke();
+      }
+
+      // Rotating Magnetic Needle
+      ctx.rotate(targetAngle);
+
+      // Red North Pointer
+      ctx.fillStyle = '#ff4d5e';
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.lineTo(35, 0);
+      ctx.lineTo(0, 5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Brass South Pointer
+      ctx.fillStyle = '#ffb340';
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.lineTo(-35, 0);
+      ctx.lineTo(0, 5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+
+      // Floating Gold & Water Glints
+      particles.forEach(p => {
+        p.angle += p.speed;
+        p.bob += 0.05;
+        const px = cx + Math.cos(p.angle) * p.radius;
+        const py = cy + Math.sin(p.angle) * (p.radius * 0.5) + Math.sin(p.bob) * 3;
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // ==========================================
+    // 6. ANIME: Shonen Ki Aura & Sakura Petals
+    // ==========================================
+    else if (theme === 'anime') {
+      // High Speed Energy Aura Burst Core
+      const auraPulse = Math.sin(time * 10) * 8;
+      const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, 60 + auraPulse);
+      grad.addColorStop(0, '#ff6fd8');
+      grad.addColorStop(0.4, 'rgba(0, 255, 255, 0.5)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 60 + auraPulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Jagged Ki Spikes Around Core
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(time * 1.5);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const r = (i % 2 === 0) ? 45 + Math.sin(time * 8 + i) * 10 : 25;
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+
+      // Hover Electric Lightning Snap
+      if (isHovered) {
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        const midX = (cx + mouseX) / 2 + (Math.random() - 0.5) * 30;
+        const midY = (cy + mouseY) / 2 + (Math.random() - 0.5) * 30;
+        ctx.lineTo(midX, midY);
+        ctx.lineTo(mouseX, mouseY);
+        ctx.stroke();
+      }
+
+      // Sakura Petals & Energy Sparks
+      particles.forEach(p => {
+        if (p.isSakura) {
+          p.y += p.speedY;
+          p.x += p.speedX + Math.sin(time + p.rotation) * 0.5;
+          p.rotation += p.rotSpeed;
+
+          if (p.y > height + 10) {
+            p.y = -10;
+            p.x = Math.random() * width;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.fillStyle = '#ff6fd8';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          p.y -= 1.2;
+          if (p.y < 0) p.y = height;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    // Common Text Overlay on Central Core
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(conceptTitle || 'Concept Matrix', cx, cy);
+    ctx.shadowBlur = 0;
+
+    canvasEl._animFrameId = requestAnimationFrame(render);
+  }
+
+  render();
+}
+
+/* =========================================================
+   Multiverse Codex & Badges Modal Manager
+   ========================================================= */
+
+function initializeCodexModal() {
+  const openBtn = document.getElementById('openCodexBtn');
+  const closeBtn = document.getElementById('closeCodexBtn');
+  const overlay = document.getElementById('codexModalOverlay');
+  const tabBadgesBtn = document.getElementById('tabBadgesBtn');
+  const tabConceptsBtn = document.getElementById('tabConceptsBtn');
+  const badgesTab = document.getElementById('codexBadgesTab');
+  const conceptsTab = document.getElementById('codexConceptsTab');
+  const closeConceptDetailBtn = document.getElementById('closeConceptDetailBtn');
+  const conceptDetailOverlay = document.getElementById('conceptDetailOverlay');
+
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      openCodexModal();
+    });
+  }
+
+  if (closeBtn && overlay) {
+    closeBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden-element');
+      overlay.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  if (closeConceptDetailBtn && conceptDetailOverlay) {
+    closeConceptDetailBtn.addEventListener('click', () => {
+      conceptDetailOverlay.classList.add('hidden-element');
+      conceptDetailOverlay.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  if (tabBadgesBtn && tabConceptsBtn) {
+    tabBadgesBtn.addEventListener('click', () => {
+      tabBadgesBtn.classList.add('active');
+      tabConceptsBtn.classList.remove('active');
+      badgesTab.classList.remove('hidden-element');
+      conceptsTab.classList.add('hidden-element');
+    });
+
+    tabConceptsBtn.addEventListener('click', () => {
+      tabConceptsBtn.classList.add('active');
+      tabBadgesBtn.classList.remove('active');
+      conceptsTab.classList.remove('hidden-element');
+      badgesTab.classList.add('hidden-element');
+    });
+  }
+
+  // Filter pills for badges
+  const badgeFilterContainer = document.getElementById('badgeUniverseFilter');
+  if (badgeFilterContainer) {
+    badgeFilterContainer.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        badgeFilterContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const filter = pill.dataset.filter || 'all';
+        renderCodexBadges(filter);
+      });
+    });
+  }
+
+  // Filter pills for concepts
+  const conceptFilterContainer = document.getElementById('conceptUniverseFilter');
+  if (conceptFilterContainer) {
+    conceptFilterContainer.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        conceptFilterContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const filter = pill.dataset.filter || 'all';
+        renderCodexConcepts(filter);
+      });
+    });
+  }
+}
+
+function openCodexModal() {
+  const overlay = document.getElementById('codexModalOverlay');
+  if (!overlay) return;
+
+  if (window.VoiceEngine && typeof window.VoiceEngine.playSfx === 'function') {
+    window.VoiceEngine.playSfx('choice');
+  }
+
+  // Calculate totals
+  const allConcepts = CodexStore.read();
+  let totalXP = 0;
+  let unlockedBadgesCount = 0;
+  const universes = ['harrypotter', 'marvel', 'space', 'anime', 'mythology', 'pirates'];
+
+  universes.forEach(u => {
+    const up = AppState.getUniverseProgress(u);
+    totalXP += (up.points || 0);
+    unlockedBadgesCount += (up.badges || []).length;
+  });
+
+  const totalConceptsEl = document.getElementById('codexTotalConcepts');
+  const totalBadgesEl = document.getElementById('codexTotalBadges');
+  const totalXPEl = document.getElementById('codexTotalXP');
+
+  if (totalConceptsEl) totalConceptsEl.textContent = allConcepts.length;
+  if (totalBadgesEl) totalBadgesEl.textContent = `${unlockedBadgesCount}/24`;
+  if (totalXPEl) totalXPEl.textContent = totalXP;
+
+  renderCodexBadges('all');
+  renderCodexConcepts('all');
+
+  overlay.classList.remove('hidden-element');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function renderCodexBadges(filterKey) {
+  const grid = document.getElementById('codexBadgesGrid');
+  if (!grid) return;
+
+  const universes = filterKey === 'all' ? ['harrypotter', 'marvel', 'space', 'anime', 'mythology', 'pirates'] : [filterKey];
+  let html = '';
+
+  universes.forEach(u => {
+    const roster = UNIVERSE_BADGES[u] || [];
+    const uProg = AppState.getUniverseProgress(u);
+    const userBadges = uProg.badges || [];
+    const hasBadge = (id) => userBadges.some(b => (typeof b === 'string' ? b === id : b.id === id));
+
+    roster.forEach(b => {
+      const unlocked = hasBadge(b.id);
+      html += `
+        <div class="badge-card ${unlocked ? 'unlocked' : 'locked'}">
+          <div class="badge-icon">${b.icon || '🏆'}</div>
+          <div class="badge-info">
+            <div class="badge-info-title">${escapeHtml(b.title)}</div>
+            <div class="badge-info-desc">${escapeHtml(b.description)}</div>
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  grid.innerHTML = html || '<div class="concept-placeholder">No badges found</div>';
+}
+
+function renderCodexConcepts(filterKey) {
+  const grid = document.getElementById('codexConceptsGrid');
+  if (!grid) return;
+
+  const concepts = CodexStore.getConcepts(filterKey);
+
+  if (concepts.length === 0) {
+    grid.innerHTML = '<div class="concept-placeholder" style="grid-column: 1/-1; text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">No learned concepts recorded yet. Complete missions across universes to fill your Codex!</div>';
+    return;
+  }
+
+  let html = '';
+  concepts.forEach(c => {
+    const uName = AppState.universeThemes[c.universe]?.name || c.universe;
+    html += `
+      <div class="concept-card-item" data-id="${c.id}">
+        <span class="concept-card-universe">${escapeHtml(uName)} Universe</span>
+        <h4 class="concept-card-title">${escapeHtml(c.title)}</h4>
+        <p class="concept-card-snippet">${escapeHtml(c.summary || c.explanation || '')}</p>
+      </div>
+    `;
+  });
+
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.concept-card-item').forEach(card => {
+    card.addEventListener('click', () => {
+      const cid = card.dataset.id;
+      const found = concepts.find(item => item.id === cid);
+      if (found) openConceptDetailPopup(found);
+    });
+  });
+}
+
+function openConceptDetailPopup(concept) {
+  const overlay = document.getElementById('conceptDetailOverlay');
+  const body = document.getElementById('conceptDetailBody');
+  if (!overlay || !body) return;
+
+  const uName = AppState.universeThemes[concept.universe]?.name || concept.universe;
+  const mentor = getUniverseMentor(concept.universe);
+
+  body.innerHTML = `
+    <span class="codex-eyebrow">${escapeHtml(uName).toUpperCase()} UNIVERSE ARCHIVE</span>
+    <h2 class="codex-title" style="margin-bottom: 1rem;">${escapeHtml(concept.title)}</h2>
+    
+    <div style="margin-bottom: 1.25rem;">
+      <h3 style="font-size: 0.95rem; color: var(--universe-accent, #ffd700); margin-bottom: 0.4rem;">💡 Key Summary</h3>
+      <p style="font-size: 0.95rem; line-height: 1.5; color: rgba(255,255,255,0.9);">${escapeHtml(concept.summary)}</p>
+    </div>
+
+    ${concept.explanation ? `
+      <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 0.95rem; color: var(--universe-accent, #ffd700); margin-bottom: 0.4rem;">📜 Detailed Explanation</h3>
+        <p style="font-size: 0.92rem; line-height: 1.5; color: rgba(255,255,255,0.85);">${escapeHtml(concept.explanation)}</p>
+      </div>
+    ` : ''}
+
+    ${Array.isArray(concept.realWorld) && concept.realWorld.length > 0 ? `
+      <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 0.95rem; color: var(--universe-accent, #ffd700); margin-bottom: 0.4rem;">🌍 Real-World Applications</h3>
+        <ul style="padding-left: 1.2rem; margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.85); display: flex; flex-direction: column; gap: 0.35rem;">
+          ${concept.realWorld.map(rw => `<li>${escapeHtml(rw)}</li>`).join('')}
+        </ul>
+      </div>
+    ` : ''}
+
+    <div style="display:flex; justify-content:flex-end; margin-top: 1.5rem;">
+      <button type="button" class="action-btn primary-action" id="detailSpeakBtn" style="padding: 0.5rem 1.2rem;">
+        ${mentor.icon} Listen to ${escapeHtml(mentor.name)}
+      </button>
+    </div>
+  `;
+
+  const speakBtn = body.querySelector('#detailSpeakBtn');
+  if (speakBtn) {
+    speakBtn.addEventListener('click', () => {
+      if (window.VoiceEngine && typeof window.VoiceEngine.speakKeyConcept === 'function') {
+        window.VoiceEngine.speakKeyConcept(concept.title, concept.explanation || concept.summary);
+      }
+    });
+  }
+
+  overlay.classList.remove('hidden-element');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+if (typeof window !== 'undefined') {
+  window.CodexStore = CodexStore;
 }

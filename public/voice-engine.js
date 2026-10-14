@@ -1173,6 +1173,12 @@
     if (btn) btn.addEventListener('click', () => setAutoplay(!settings.autoplay));
     renderToggle();
 
+    // Auto attach to any story beats present on page load
+    const beatsFlow = document.getElementById('storyBeatsFlow');
+    if (beatsFlow && beatsFlow.children.length > 0) {
+      attachToScene(beatsFlow);
+    }
+
     document.addEventListener('stateChange', () => { stop(); hideHint(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
     window.addEventListener('pagehide', stop);
@@ -1186,6 +1192,76 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
+  /* ---------------- Web Audio SFX & Procedural Ambient Soundscapes ---------------- */
+
+  let audioCtx = null;
+  let ambientGainNode = null;
+  let ambientNodes = [];
+  let ambientEnabled = false;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
+  function stopAmbient() {
+    ambientNodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (_) {} });
+    ambientNodes = [];
+  }
+
+  function startAmbient(themeKey) {
+    // Disabled per user preference
+    stopAmbient();
+  }
+
+  function toggleAmbient() {
+    ambientEnabled = false;
+    stopAmbient();
+  }
+
+  function updateAmbientUI() {}
+
+  /* Short synthesized UI sound effects (Web Audio, no assets needed).
+     Types used by the app: 'choice', 'ability', 'correct', 'wrong', 'badge'. */
+  const SFX_PATTERNS = {
+    choice:  [{ f: 520, d: 0.07, t: 'sine' }, { f: 700, d: 0.09, t: 'sine' }],
+    ability: [{ f: 400, d: 0.08, t: 'triangle' }, { f: 600, d: 0.08, t: 'triangle' }, { f: 900, d: 0.14, t: 'triangle' }],
+    correct: [{ f: 523, d: 0.10, t: 'sine' }, { f: 659, d: 0.10, t: 'sine' }, { f: 784, d: 0.18, t: 'sine' }],
+    wrong:   [{ f: 220, d: 0.14, t: 'sawtooth' }, { f: 165, d: 0.22, t: 'sawtooth' }],
+    badge:   [{ f: 659, d: 0.09, t: 'triangle' }, { f: 784, d: 0.09, t: 'triangle' }, { f: 988, d: 0.09, t: 'triangle' }, { f: 1319, d: 0.22, t: 'triangle' }]
+  };
+
+  function playSfx(type) {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const notes = SFX_PATTERNS[type] || SFX_PATTERNS.choice;
+      let when = ctx.currentTime;
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = n.t;
+        osc.frequency.setValueAtTime(n.f, when);
+        gain.gain.setValueAtTime(0.0001, when);
+        gain.gain.exponentialRampToValueAtTime(0.12, when + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, when + n.d);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(when);
+        osc.stop(when + n.d + 0.02);
+        when += n.d * 0.9;
+      });
+    } catch (_) { /* audio blocked or unsupported — SFX are optional */ }
+  }
+
   window.VoiceEngine = {
     isSupported: SUPPORTED,
     attachToScene,
@@ -1196,6 +1272,11 @@
     stop,
     skip,
     setAutoplay,
+    playSfx,
+    startAmbient,
+    stopAmbient,
+    toggleAmbient,
+    triggerSparkle
   };
 })();
 

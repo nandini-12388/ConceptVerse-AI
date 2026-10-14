@@ -1,0 +1,602 @@
+/* =========================================================
+   ConceptVerse — Motion layer (animations.css)
+
+   Everything here is scoped under `html.anim-on`, and lives in its own
+   file, so it is fully reversible:
+     • Turn off instantly:   ConceptAnim.disable()   (console)  or  ?anim=off
+     • Turn back on:         ConceptAnim.enable()               or  ?anim=on
+     • Remove permanently:   delete the <link> to animations.css and the
+                             <script> for animations.js in index.html.
+   A full copy of the pre-animation app is in /backup-pre-animations.
+
+   Rule of thumb used throughout: entrance animations use
+   `animation-fill-mode: backwards` (never `forwards`/`both`) so that once
+   they finish, the element goes back to its normal CSS and existing hover /
+   state transforms keep working.
+   ========================================================= */
+
+html.anim-on {
+  --cv-ease: var(--ease, cubic-bezier(0.16, 1, 0.3, 1));
+  --cv-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cv-stagger: 70ms;
+}
+
+/* ---------------------------------------------------------
+   1. Screen transitions
+   The original `.screen` fade relied on a CSS transition across
+   `display:none`, which can never run. Use a keyframe animation instead.
+   --------------------------------------------------------- */
+html.anim-on .screen { transition: none; }
+html.anim-on .screen.active-screen {
+  animation: cvScreenIn 0.6s var(--cv-ease) backwards;
+}
+@keyframes cvScreenIn {
+  from { opacity: 0; transform: translateY(22px) scale(0.985); }
+}
+
+/* ---------------------------------------------------------
+   2. Generic staggered entrance (containers tagged by animations.js
+      with [data-cv-stagger]; children get --i = their index)
+   --------------------------------------------------------- */
+html.anim-on [data-cv-stagger] > * {
+  animation: cvRise 0.55s var(--cv-ease) backwards;
+  animation-delay: calc(var(--i, 0) * var(--cv-stagger));
+}
+@keyframes cvRise {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+}
+
+/* ---------------------------------------------------------
+   3. Mission-generation loader
+   --------------------------------------------------------- */
+.cv-loader { display: none; }
+html.anim-on .cv-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0 0.9rem;
+}
+.cv-loader-orbit {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.cv-loader-orbit i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--universe-primary, #7c5cff);
+  animation: cvSpin 1.2s linear infinite;
+}
+.cv-loader-orbit i:nth-child(2) {
+  inset: 9px;
+  border-top-color: var(--universe-accent, #ffd700);
+  animation-duration: 1.7s;
+  animation-direction: reverse;
+}
+.cv-loader-orbit i:nth-child(3) {
+  inset: 18px;
+  border-top-color: var(--cyan, #22d3ee);
+  animation-duration: 0.9s;
+}
+.cv-loader-orbit b {
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  background: var(--universe-primary, #7c5cff);
+  box-shadow: 0 0 18px var(--universe-primary, #7c5cff);
+  animation: cvCorePulse 1.4s ease-in-out infinite;
+}
+.cv-loader-msg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--universe-accent, #ffd700);
+  min-height: 1.3em;
+  animation: cvMsgIn 0.45s var(--cv-ease) backwards;
+}
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+@keyframes cvCorePulse {
+  0%, 100% { transform: scale(0.7); opacity: 0.7; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+@keyframes cvMsgIn { from { opacity: 0; transform: translateY(8px); } }
+
+/* Shimmer sweep across the Start buttons while a mission is generating */
+html.anim-on #startMissionBtn:disabled,
+html.anim-on #startNotesMissionBtn:disabled {
+  position: relative;
+  overflow: hidden;
+}
+html.anim-on #startMissionBtn:disabled::after,
+html.anim-on #startNotesMissionBtn:disabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: cvSweep 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes cvSweep { to { transform: translateX(100%); } }
+
+/* ---------------------------------------------------------
+   4. Story beats — staggered, per-type entrances
+   --------------------------------------------------------- */
+html.anim-on .story-beat {
+  animation: cvBeatIn 0.6s var(--cv-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 110ms);
+}
+@keyframes cvBeatIn {
+  from { opacity: 0; transform: translateY(16px); }
+}
+/* allies / the learner arrive from the left */
+html.anim-on .story-beat--ally,
+html.anim-on .story-beat--learner {
+  animation-name: cvFromLeft;
+}
+@keyframes cvFromLeft {
+  from { opacity: 0; transform: translateX(-42px); }
+}
+/* rivals sweep in from the right, with a hostile red flash */
+html.anim-on .story-beat--rival {
+  animation-name: cvFromRight;
+}
+@keyframes cvFromRight {
+  from { opacity: 0; transform: translateX(46px); box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  60%  { box-shadow: 0 0 22px rgba(239, 68, 68, 0.35); }
+}
+/* comic relief bounces in */
+html.anim-on .story-beat--comic {
+  animation-name: cvBounceIn;
+  animation-duration: 0.75s;
+  animation-timing-function: var(--cv-spring);
+}
+@keyframes cvBounceIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.9) rotate(-1.2deg); }
+}
+/* speaker avatars pop shortly after their card lands */
+html.anim-on .beat-speaker-avatar {
+  display: inline-block;
+  animation: cvAvatarPop 0.55s var(--cv-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 180ms);
+}
+@keyframes cvAvatarPop {
+  from { transform: scale(0) rotate(-25deg); opacity: 0; }
+}
+
+/* Action beats: a brief spark flash, tinted by the beat's fx type */
+html.anim-on .story-beat--action {
+  animation-name: cvActionIn;
+  animation-duration: 0.7s;
+}
+@keyframes cvActionIn {
+  from { opacity: 0; transform: translateX(-18px) scale(0.97); filter: brightness(2.2); }
+  55%  { filter: brightness(1.5); }
+}
+html.anim-on .story-beat--action .beat-narration-icon {
+  display: inline-block;
+  animation: cvBolt 0.7s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 120ms);
+}
+@keyframes cvBolt {
+  from { transform: scale(0.2) rotate(-50deg); opacity: 0; }
+  60%  { transform: scale(1.5) rotate(10deg); opacity: 1; }
+}
+html.anim-on .story-beat[data-fx="spell"]   { --cv-fx: 167, 139, 250; }
+html.anim-on .story-beat[data-fx="power"]   { --cv-fx: 250, 204, 21; }
+html.anim-on .story-beat[data-fx="attack"]  { --cv-fx: 239, 68, 68; }
+html.anim-on .story-beat[data-fx="inspect"] { --cv-fx: 34, 211, 238; }
+html.anim-on .story-beat[data-t="action"][data-fx] {
+  animation-name: cvActionFx;
+}
+@keyframes cvActionFx {
+  from { opacity: 0; transform: translateX(-18px) scale(0.97); box-shadow: 0 0 0 rgba(var(--cv-fx, 124, 92, 255), 0); }
+  55%  { box-shadow: 0 0 26px rgba(var(--cv-fx, 124, 92, 255), 0.55); }
+}
+
+/* Environment beats react to their fx: fire / glow / shake / storm */
+html.anim-on .story-beat[data-t="env"] {
+  animation-duration: 0.8s;
+}
+html.anim-on .story-beat[data-t="env"][data-fx="fire"] {
+  animation-name: cvEnvFire;
+}
+@keyframes cvEnvFire {
+  from { opacity: 0; transform: translateY(10px); box-shadow: 0 0 0 rgba(251, 146, 60, 0); }
+  30%  { box-shadow: 0 0 30px rgba(251, 146, 60, 0.6); }
+  50%  { box-shadow: 0 0 14px rgba(239, 68, 68, 0.45); }
+  70%  { box-shadow: 0 0 28px rgba(251, 146, 60, 0.5); }
+}
+html.anim-on .story-beat[data-t="env"][data-fx="glow"] {
+  animation-name: cvEnvGlow;
+}
+@keyframes cvEnvGlow {
+  from { opacity: 0; filter: brightness(2) saturate(1.5); }
+  50%  { filter: brightness(1.4) saturate(1.2); }
+}
+html.anim-on .story-beat[data-t="env"][data-fx="shake"] {
+  animation-name: cvEnvShake;
+  animation-duration: 0.7s;
+}
+@keyframes cvEnvShake {
+  from { opacity: 0; }
+  15%  { opacity: 1; transform: translate(-6px, 2px); }
+  30%  { transform: translate(6px, -3px); }
+  45%  { transform: translate(-5px, 2px); }
+  60%  { transform: translate(4px, -2px); }
+  80%  { transform: translate(-2px, 1px); }
+}
+html.anim-on .story-beat[data-t="env"][data-fx="storm"] {
+  animation-name: cvEnvStorm;
+}
+@keyframes cvEnvStorm {
+  from { opacity: 0; }
+  12%  { opacity: 1; filter: brightness(3); }
+  20%  { filter: brightness(1); }
+  32%  { filter: brightness(2.2); }
+  44%  { filter: brightness(1); }
+}
+/* Ambient flicker on the env icon, matching its fx */
+html.anim-on .story-beat[data-t="env"] .beat-narration-icon {
+  display: inline-block;
+  animation: cvIconFloat 3.2s ease-in-out infinite;
+}
+html.anim-on .story-beat[data-t="env"][data-fx="fire"] .beat-narration-icon {
+  animation: cvIconFlicker 1.1s ease-in-out infinite;
+}
+@keyframes cvIconFloat { 50% { transform: translateY(-3px) rotate(6deg); } }
+@keyframes cvIconFlicker {
+  0%, 100% { transform: scale(1) rotate(-3deg); filter: brightness(1); }
+  30%      { transform: scale(1.18) rotate(3deg); filter: brightness(1.4); }
+  60%      { transform: scale(0.95) rotate(-2deg); }
+}
+
+/* Key-concept (discovery) beats: golden pop + sweeping highlight */
+html.anim-on .story-beat--discovery {
+  position: relative;
+  overflow: hidden;
+  animation-name: cvDiscoveryPop;
+  animation-duration: 0.9s;
+  animation-timing-function: var(--cv-spring);
+}
+@keyframes cvDiscoveryPop {
+  from { opacity: 0; transform: scale(0.92); box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+  60%  { box-shadow: 0 0 30px rgba(255, 215, 0, 0.45); }
+}
+html.anim-on .story-beat--discovery::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 235, 150, 0.25) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: cvSweep 1.1s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 450ms);
+  pointer-events: none;
+}
+
+/* The line currently being read aloud: living glow ring + accent bar.
+   Drawn on a pseudo-element so the beat's own entrance animation is never
+   swapped out (which would replay it). */
+html.anim-on .story-beat.is-voicing { position: relative; }
+html.anim-on .story-beat.is-voicing::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1px solid var(--universe-accent, #ffd700);
+  border-left-width: 4px;
+  pointer-events: none;
+  animation: cvVoiceGlow 1.6s ease-in-out infinite;
+}
+@keyframes cvVoiceGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.25), inset 0 0 8px rgba(124, 92, 255, 0.15); opacity: 0.75; }
+  50%      { box-shadow: 0 0 24px rgba(255, 215, 0, 0.55), inset 0 0 16px rgba(124, 92, 255, 0.3); opacity: 1; }
+}
+
+/* ---------------------------------------------------------
+   5. Choices and quiz feedback
+   --------------------------------------------------------- */
+html.anim-on .choice-btn,
+html.anim-on .question-option-btn {
+  position: relative;
+  overflow: hidden;
+}
+html.anim-on .choice-btn:active:not(:disabled),
+html.anim-on .question-option-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+html.anim-on .choice-btn.is-correct,
+html.anim-on .question-option-btn.correct {
+  animation: cvCorrect 0.8s var(--cv-spring);
+}
+html.anim-on [data-cv-stagger] > .choice-btn.is-correct,
+html.anim-on [data-cv-stagger] > .question-option-btn.correct {
+  animation: cvRise 0.55s var(--cv-ease) backwards, cvCorrect 0.8s var(--cv-spring);
+  animation-delay: calc(var(--i, 0) * var(--cv-stagger)), 0s;
+}
+@keyframes cvCorrect {
+  0%   { transform: scale(1); box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+  35%  { transform: scale(1.04); box-shadow: 0 0 30px rgba(34, 197, 94, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 14px rgba(34, 197, 94, 0.3); }
+}
+html.anim-on .choice-btn.is-incorrect,
+html.anim-on .question-option-btn.incorrect {
+  animation: cvWrong 0.55s ease-in-out;
+}
+html.anim-on [data-cv-stagger] > .choice-btn.is-incorrect,
+html.anim-on [data-cv-stagger] > .question-option-btn.incorrect {
+  animation: cvRise 0.55s var(--cv-ease) backwards, cvWrong 0.55s ease-in-out;
+  animation-delay: calc(var(--i, 0) * var(--cv-stagger)), 0s;
+}
+@keyframes cvWrong {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-9px); background-color: rgba(239, 68, 68, 0.45); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(5px); }
+  80% { transform: translateX(-2px); }
+}
+/* consequence / feedback cards swell in */
+html.anim-on .consequence-card,
+html.anim-on .choice-feedback {
+  animation: cvFeedbackIn 0.55s var(--cv-spring) backwards;
+}
+@keyframes cvFeedbackIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.94); }
+}
+/* the Continue buttons breathe so the next step is obvious */
+html.anim-on .story-continue-btn {
+  position: relative;
+  overflow: hidden;
+  animation: cvRise 0.55s var(--cv-ease) backwards, cvBreath 2.6s ease-in-out 0.8s infinite;
+}
+html.anim-on .story-continue-btn:hover { animation-play-state: running, paused; }
+@keyframes cvBreath {
+  0%, 100% { box-shadow: 0 0 0 rgba(124, 92, 255, 0); }
+  50%      { box-shadow: 0 0 22px rgba(124, 92, 255, 0.5); }
+}
+
+/* Ripple (spans injected by animations.js on click) */
+.cv-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  pointer-events: none;
+  animation: cvRipple 0.65s ease-out forwards;
+}
+@keyframes cvRipple {
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* ---------------------------------------------------------
+   6. Progress + counters
+   --------------------------------------------------------- */
+html.anim-on .progress-fill {
+  position: relative;
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.anim-on .progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.45) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: cvSweep 2.2s ease-in-out infinite;
+}
+html.anim-on .cv-bump {
+  display: inline-block;
+  animation: cvBump 0.5s var(--cv-spring);
+}
+@keyframes cvBump {
+  40% { transform: scale(1.35); color: var(--universe-accent, #ffd700); text-shadow: 0 0 14px var(--universe-accent, #ffd700); }
+}
+
+/* ---------------------------------------------------------
+   7. Rewards: concept-unlocked screen, badges, confetti
+   --------------------------------------------------------- */
+html.anim-on .concept-unlocked-screen.active-screen .concept-reveal-animation {
+  animation: cvRevealIn 0.9s var(--cv-spring) backwards;
+}
+@keyframes cvRevealIn {
+  from { opacity: 0; transform: scale(0.2) rotate(-120deg); }
+}
+html.anim-on .concept-unlocked-screen.active-screen .concept-reward-badge {
+  animation: cvBadgePop 0.8s var(--cv-spring) 0.35s backwards, cvRewardPulse 2.2s ease-in-out 1.15s infinite;
+}
+@keyframes cvBadgePop {
+  from { opacity: 0; transform: scale(0.3) translateY(20px); }
+}
+@keyframes cvRewardPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.2); transform: scale(1); }
+  50%      { box-shadow: 0 0 28px rgba(255, 215, 0, 0.45); transform: scale(1.02); }
+}
+html.anim-on .concept-unlocked-screen.active-screen .concept-header      { animation: cvRise 0.7s var(--cv-ease) 0.55s backwards; }
+html.anim-on .concept-unlocked-screen.active-screen .concept-explanation { animation: cvRise 0.7s var(--cv-ease) 0.75s backwards; }
+html.anim-on .concept-unlocked-screen.active-screen .concept-takeaway-card { animation: cvRise 0.7s var(--cv-ease) 0.95s backwards; }
+html.anim-on .concept-unlocked-screen.active-screen .concept-actions     { animation: cvRise 0.7s var(--cv-ease) 1.15s backwards; }
+
+html.anim-on .badge-item,
+html.anim-on .badge-card {
+  animation: cvBadgePop 0.7s var(--cv-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+html.anim-on .badge-card.unlocked .badge-icon,
+html.anim-on .badge-item .badge-icon {
+  display: inline-block;
+  animation: cvIconFloat 3.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 200ms);
+}
+
+#cvConfetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 100000;
+}
+.cv-confetti-piece {
+  position: absolute;
+  top: -20px;
+  opacity: 0;
+  animation: cvConfettiFall linear forwards;
+  will-change: transform, opacity;
+}
+@keyframes cvConfettiFall {
+  0%   { opacity: 1; transform: translate3d(0, 0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate3d(var(--dx, 0), 105vh, 0) rotate(var(--rot, 540deg)); }
+}
+
+/* ---------------------------------------------------------
+   8. Selection screens: universes, missions, hub, character creation
+   --------------------------------------------------------- */
+html.anim-on .universe-portal {
+  --cv-glow: var(--universe-primary, #7c5cff);
+  animation: cvPortalIn 0.8s var(--cv-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 100ms + 150ms);
+  transform-style: preserve-3d;
+}
+@keyframes cvPortalIn {
+  from { opacity: 0; transform: translateY(40px) scale(0.8) rotateX(25deg); }
+}
+html.anim-on .universe-portal[data-universe="harrypotter"] { --cv-glow: #e6b800; }
+html.anim-on .universe-portal[data-universe="marvel"]      { --cv-glow: #ef4444; }
+html.anim-on .universe-portal[data-universe="space"]       { --cv-glow: #22d3ee; }
+html.anim-on .universe-portal[data-universe="anime"]       { --cv-glow: #f472b6; }
+html.anim-on .universe-portal[data-universe="pirates"]     { --cv-glow: #f59e0b; }
+html.anim-on .universe-portal[data-universe="mythology"]   { --cv-glow: #fb923c; }
+
+html.anim-on .universe-portal:hover,
+html.anim-on .mission-card:hover {
+  transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px) scale(1.03);
+}
+html.anim-on .universe-portal:hover {
+  border-color: var(--cv-glow);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), 0 0 26px var(--cv-glow);
+}
+html.anim-on .universe-portal:hover::before {
+  background: linear-gradient(135deg, var(--cv-glow) 0%, transparent 60%);
+}
+html.anim-on .universe-portal .universe-portal-icon {
+  transition: transform 0.4s var(--cv-spring);
+}
+html.anim-on .universe-portal:hover .universe-portal-icon {
+  transform: scale(1.25) rotate(-8deg) translateY(-3px);
+}
+html.anim-on .universe-portal:not(:hover) .universe-portal-icon {
+  animation: cvIconFloat 4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 350ms);
+}
+html.anim-on .universe-portal,
+html.anim-on .mission-card { will-change: transform; }
+
+/* mission cards + launch button */
+html.anim-on .mission-card {
+  animation: cvRise 0.65s var(--cv-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 85ms);
+}
+html.anim-on .mission-card-launch-btn {
+  position: relative;
+  overflow: hidden;
+}
+html.anim-on .mission-card:hover .mission-card-launch-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: cvSweep 0.9s ease-out;
+  pointer-events: none;
+}
+
+/* hub cards + header */
+html.anim-on .hub-screen.active-screen .hub-header {
+  animation: cvRise 0.7s var(--cv-ease) backwards;
+}
+html.anim-on .hub-card {
+  transition: transform 0.3s var(--cv-ease), box-shadow 0.3s var(--cv-ease);
+}
+html.anim-on .hub-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 18px rgba(124, 92, 255, 0.3);
+}
+html.anim-on .hub-action-btn:hover { transform: translateY(-2px) scale(1.03); }
+
+/* character creation: options stagger in, and selections "pop" */
+html.anim-on .option-btn {
+  position: relative;
+  overflow: hidden;
+}
+html.anim-on .option-btn.selected {
+  animation: cvSelectPop 0.5s var(--cv-spring);
+}
+html.anim-on [data-cv-stagger] > .option-btn.selected {
+  animation: cvRise 0.55s var(--cv-ease) backwards, cvSelectPop 0.5s var(--cv-spring);
+  animation-delay: calc(var(--i, 0) * var(--cv-stagger)), 0s;
+}
+@keyframes cvSelectPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 24px var(--universe-primary, #7c5cff); }
+  100% { transform: scale(1); }
+}
+
+/* ---------------------------------------------------------
+   9. Cast sprites
+   --------------------------------------------------------- */
+html.anim-on .character-sprite {
+  animation: cvSpriteEnter 0.7s var(--cv-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes cvSpriteEnter {
+  from { opacity: 0; transform: translateY(-22px) scale(0.5); }
+  60%  { transform: translateY(4px) scale(1.08); }
+}
+/* gentle idle "breathing" — only for sprites that aren't speaking */
+html.anim-on .character-sprite:not(.is-speaking):not(.is-voicing) .sprite-figure {
+  animation: cvIdle 3.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.45s);
+  transform-origin: 50% 100%;
+}
+@keyframes cvIdle {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-1.5px) scaleY(1.025); }
+}
+/* tiny equaliser beside the name of whoever is talking */
+html.anim-on .character-sprite.is-voicing .sprite-name::after {
+  content: '';
+  display: inline-block;
+  width: 13px;
+  height: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background:
+    linear-gradient(currentColor, currentColor) 0 100% / 3px 40% no-repeat,
+    linear-gradient(currentColor, currentColor) 5px 100% / 3px 70% no-repeat,
+    linear-gradient(currentColor, currentColor) 10px 100% / 3px 50% no-repeat;
+  animation: cvEq 0.7s ease-in-out infinite alternate;
+}
+@keyframes cvEq {
+  to {
+    background-size: 3px 90%, 3px 35%, 3px 100%;
+  }
+}
+
+/* ---------------------------------------------------------
+   Respect users who ask for less motion (this also complements the
+   global reduced-motion rule in style.css)
+   --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html.anim-on .cv-loader-orbit i,
+  html.anim-on .cv-loader-orbit b,
+  html.anim-on .progress-fill::after,
+  html.anim-on .story-continue-btn,
+  html.anim-on .character-sprite .sprite-figure,
+  html.anim-on .universe-portal .universe-portal-icon,
+  html.anim-on .story-beat.is-voicing {
+    animation: none !important;
+  }
+  #cvConfetti { display: none; }
+}
